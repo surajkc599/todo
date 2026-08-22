@@ -4,9 +4,9 @@
  * Database operations implemented with Prisma ORM
  */
 
-import { List, CreateListRequest } from '../types/index';
-import { ApiError } from '../middleware/errorHandler';
-import prisma from './prismaClient';
+import { List, CreateListRequest } from '../types/index.js';
+import { ApiError } from '../middleware/errorHandler.js';
+import prisma from './prismaClient.js';
 
 /**
  * Create a new list

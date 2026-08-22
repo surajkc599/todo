@@ -5,9 +5,7 @@
 /**
  * Validates a create item request
  */
-export function validateCreateItemRequest(
-  data: unknown
-): {
+export function validateCreateItemRequest(data: unknown): {
   isValid: boolean;
   errors: string[];
 } {
@@ -48,9 +46,7 @@ export function validateCreateItemRequest(
 /**
  * Validates an update item request
  */
-export function validateUpdateItemRequest(
-  data: unknown
-): {
+export function validateUpdateItemRequest(data: unknown): {
   isValid: boolean;
   errors: string[];
 } {

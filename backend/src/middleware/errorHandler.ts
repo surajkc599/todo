@@ -4,7 +4,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { ApiResponse } from '../types/index';
+import { ApiResponse } from '../types/index.js';
 
 /**
  * Custom error class for API errors

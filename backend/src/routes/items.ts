@@ -11,9 +11,9 @@
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
-import { ApiResponse, Item, CreateItemRequest, UpdateItemRequest } from '../types/index';
-import * as itemService from '../services/itemService';
-import { validateCreateItemRequest, validateUpdateItemRequest } from '../utils/validation';
+import { ApiResponse, Item, CreateItemRequest, UpdateItemRequest } from '../types/index.js';
+import * as itemService from '../services/itemService.js';
+import { validateCreateItemRequest, validateUpdateItemRequest } from '../utils/validation.js';
 
 const router = Router({ mergeParams: true }); // mergeParams to access :listId from parent router
 

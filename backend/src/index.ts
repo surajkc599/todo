@@ -6,12 +6,12 @@
 import 'dotenv/config';
 import express, { Express } from 'express';
 import swaggerUi from 'swagger-ui-express';
-import { corsMiddleware } from './middleware/cors';
-import { loggingMiddleware } from './middleware/logging';
-import { errorHandler, notFoundHandler } from './middleware/errorHandler';
-import listRoutes from './routes/lists';
-import itemRoutes from './routes/items';
-import { swaggerSpec } from './swagger';
+import { corsMiddleware } from './middleware/cors.js';
+import { loggingMiddleware } from './middleware/logging.js';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import listRoutes from './routes/lists.js';
+import itemRoutes from './routes/items.js';
+import { swaggerSpec } from './swagger.js';
 
 // Initialize Express app
 const app: Express = express();

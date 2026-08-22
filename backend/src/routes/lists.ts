@@ -11,8 +11,8 @@
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
-import { ApiResponse, List, CreateListRequest } from '../types/index';
-import * as listService from '../services/listService';
+import { ApiResponse, List, CreateListRequest } from '../types/index.js';
+import * as listService from '../services/listService.js';
 
 const router = Router();
 

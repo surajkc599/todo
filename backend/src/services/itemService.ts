@@ -4,10 +4,10 @@
  * Database operations implemented with Prisma ORM
  */
 
-import { Item, CreateItemRequest, UpdateItemRequest } from '../types/index';
-import { ApiError } from '../middleware/errorHandler';
-import { sanitizeText } from '../utils/validation';
-import prisma from './prismaClient';
+import { Item, CreateItemRequest, UpdateItemRequest } from '../types/index.js';
+import { ApiError } from '../middleware/errorHandler.js';
+import { sanitizeText } from '../utils/validation.js';
+import prisma from './prismaClient.js';
 
 /**
  * Create a new item in a list
