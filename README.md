@@ -150,9 +150,12 @@ VITE_API_URL=http://localhost:3001/api
 
 ## Documentation
 
+- [Architecture Overview](docs/ARCHITECTURE.md)
+- [Hosting & Deployment](docs/HOSTING.md) — Vercel, Render/Railway, environment setup
+- [Architecture Decisions](docs/ARCHITECTURE_DECISIONS.md) — Tech choices & tradeoffs
+- [Project Roadmap](docs/PLAN.md) — v1/v2/v3 feature plans
 - [Backend Guide](backend/README.md)
 - [Frontend Guide](frontend/README.md)
-- [Architecture Decisions](docs/ARCHITECTURE_DECISIONS.md)
 
 ## Version History
 

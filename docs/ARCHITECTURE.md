@@ -142,11 +142,12 @@ const [error, setError] = useState(null);
 
 ## Hosting Strategy
 
-- **Backend + Database:** Render or Railway (all-in-one platform, free tier available)
-- **Frontend:** Vercel (free tier)
-- **URL Pattern:** `https://yourtodo.vercel.app/list/:listId`
+See **[HOSTING.md](HOSTING.md)** for complete deployment strategy, platform setup, environment variables, and cost analysis.
 
-**Setup:** One deploy command per service. No DevOps overhead.
+**Quick Summary:**
+- **Frontend:** Vercel (free tier)
+- **Backend + Database:** Render or Railway (free tier, includes PostgreSQL)
+- **Deployment:** Git-based auto-deploy, zero DevOps overhead
 
 ---
 
@@ -209,9 +210,10 @@ npm run dev
 
 ## Related Documentation
 
+- **[HOSTING.md](HOSTING.md)** — Deployment strategy, Vercel & Render setup, environment variables, cost analysis
 - **[ARCHITECTURE_DECISIONS.md](ARCHITECTURE_DECISIONS.md)** — Deep dive into tech choices, tradeoffs, and alternatives for each decision
-- **[MVP_V1.md](MVP_V1.md)** — Feature scope and requirements for v1
-- **[DECISIONS.md](DECISIONS.md)** — Strategic decisions (vision, user personas, priorities)
+- **[PLAN.md](PLAN.md)** — Feature roadmap and vision for v1/v2/v3
+- **[FOLDER_STRUCTURE.md](FOLDER_STRUCTURE.md)** — Project organization and file layout
 
 ---
 
