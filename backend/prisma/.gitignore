@@ -3,8 +3,5 @@
 .env.local
 .env.*.local
 
-# Prisma migrations directory (auto-generated)
-/migrations/
-
 # Prisma client (node_modules)
 node_modules/
