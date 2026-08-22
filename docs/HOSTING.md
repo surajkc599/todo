@@ -46,12 +46,12 @@ Todo App v1 uses a **cloud-native, serverless-first** approach with minimal DevO
 
 3. **Configure Environment Variables**
    ```env
-   VITE_API_URL=https://your-backend-api.render.com/api
+   VITE_API_URL=https://todo-api-75yo.onrender.com/api
    ```
 
 4. **Deploy**
    - Vercel auto-deploys on git push to `main`
-   - URL: `https://yourtodo.vercel.app`
+   - URL: `https://todo-six-zeta-34.vercel.app/`
 
 ### Production Build
 
@@ -91,36 +91,47 @@ npm run build  # Creates optimized dist/ folder
    - Go to [render.com](https://render.com)
    - Sign up with GitHub
 
-2. **Connect Repository**
+2. **Create PostgreSQL Database** (do this FIRST!)
+   - In Render dashboard: Click "New +" → "PostgreSQL"
+   - **Database:** `todo-db`
+   - **Version:** Latest
+   - **Region:** Choose a region (remember this for the web service)
+   - Wait for database to finish creating (~1-2 minutes)
+   - Copy the `Internal Database URL` (you'll need it later)
+
+3. **Create Web Service**
    - Click "New +" → "Web Service"
    - Connect your GitHub repo
    - Select `backend` directory as root
-
-3. **Configure Service**
-   - **Name:** `todo-api` (or your choice)
+   - **Name:** `todo-api`
    - **Environment:** Node
-   - **Build Command:** `npm install && npm run prisma:generate && npm run build`
+   - **Build Command:** `npm ci --include=dev && npm run prisma:generate && npm run build`
    - **Start Command:** `npm run start`
    
    **Build Command Breakdown:**
-   - `npm install` — Install dependencies
+   - `npm ci --include=dev` — Install dependencies AND devDependencies (needed for TypeScript types)
    - `npm run prisma:generate` — Generate Prisma client
    - `npm run build` — **Compile TypeScript to JavaScript** (critical step!)
+   
+   **Important:** Use `npm ci --include=dev` (not just `npm install`) to ensure @types packages are installed for type checking
 
-4. **Create PostgreSQL Database**
-   - In Render dashboard: "New +" → "PostgreSQL"
-   - **Database:** `todo-db`
-   - **Version:** Latest
-   - **Region:** Same as web service
-
-5. **Link Database to Backend**
+4. **Configure Environment Variables**
    - In web service settings → "Environment"
-   - Render auto-provides `DATABASE_URL`
-   - Add custom env vars:
+   - **After the database is linked**, Render auto-provides `DATABASE_URL`
+   - If DATABASE_URL doesn't appear, manually add it from your PostgreSQL database's connection string
+   - Add these required env vars:
      ```env
      NODE_ENV=production
      PORT=3001
+     DATABASE_URL=postgresql://user:password@hostname:5432/todo_db
+     FRONTEND_URL=https://your-vercel-app.vercel.app
      ```
+   - Replace `your-vercel-app` with your actual Vercel frontend URL (e.g., `todo-six-zeta-34.vercel.app`)
+
+5. **Link Database to Web Service** (if not auto-linked)
+   - Go to web service settings → "Environment"
+   - Verify `DATABASE_URL` is set
+   - If missing, find it in your PostgreSQL database dashboard → "Connections"
 
 6. **Deploy**
    ```bash
@@ -129,7 +140,7 @@ npm run build  # Creates optimized dist/ folder
    # Render auto-deploys immediately
    ```
 
-   - URL: `https://todo-api.onrender.com`
+   - URL: `https://todo-api-75yo.onrender.com`
 
 ### Setup on Railway
 
@@ -143,9 +154,10 @@ npm run build  # Creates optimized dist/ folder
    - Set root directory: `backend`
 
 3. **Configure Build & Start**
-   - **Build Command:** `npm install && npm run prisma:generate && npm run build`
+   - **Build Command:** `npm ci --include=dev && npm run prisma:generate && npm run build`
    - **Start Command:** `npm run start`
    - Set in project settings → Variables or Railway.toml
+   - **Important:** Use `npm ci --include=dev` to ensure @types packages are installed
 
 4. **Configure Environment**
    - Add `NODE_ENV=production`
@@ -361,26 +373,42 @@ curl https://yourtodo.vercel.app
 
 ## Troubleshooting
 
+### "Cannot find declaration file for module 'express'" (TypeScript Error)
+- **Cause:** DevDependencies (like @types/express, @types/node) weren't installed during build
+- **Fix:** Use `npm ci --include=dev` in Build Command instead of just `npm install`
+- **Update Render Build Command to:** `npm ci --include=dev && npm run prisma:generate && npm run build`
+- **Why:** `npm install` skips devDependencies when NODE_ENV=production, but TypeScript needs @types packages to compile
+
 ### "Cannot find module `/dist/index.js`" (Build Error)
-- **Cause:** Build command didn't include `npm run build` step
-- **Fix:** Update Render Build Command to: `npm install && npm run prisma:generate && npm run build`
+- **Cause:** Build command didn't include `npm run build` step or missing devDependencies
+- **Fix:** Update Render Build Command to: `npm ci --include=dev && npm run prisma:generate && npm run build`
 - **Verify:** Check that TypeScript compilation happened in build logs
 - **Note:** TypeScript must be compiled to JavaScript before `npm run start` can run
 
-### "Cannot connect to database"
-- Check `DATABASE_URL` is set in Render env vars
+### "DATABASE_URL not set" or "Cannot connect to database"
+- **Important:** Create PostgreSQL database FIRST, then create web service
+- Render only provides `DATABASE_URL` after the database exists and is linked
+- **If DATABASE_URL is missing:** Manually add it to web service Environment settings
+- **Find URL:** PostgreSQL database dashboard → "Connections" → Copy internal database URL
 - Verify PostgreSQL service is running
 - Check IP allowlist in database settings
 
-### "CORS error in production"
-- Verify frontend URL is added to `CORS_ORIGINS`
-- Restart backend service after env var changes
+### "CORS error in production" or "Referrer Policy error"
+- **Cause:** Backend doesn't know your Vercel frontend URL
+- **Fix:** Set `FRONTEND_URL` environment variable on Render backend
+- **Value:** Your actual Vercel URL (e.g., `https://todo-six-zeta-34.vercel.app`)
+- **Steps:**
+  1. Go to Render web service → Settings → Environment
+  2. Add `FRONTEND_URL=https://your-vercel-app.vercel.app`
+  3. Click "Save" and Render will redeploy automatically
+  4. Wait 2-3 minutes for deployment, then try again
 - Check browser console for exact origin being blocked
 
 ### "Build fails on Render"
 - Check build logs in Render dashboard
 - Verify `npm run build` works locally first
-- Ensure all dependencies are in `package.json` (not just `devDependencies`)
+- **Ensure build command includes `npm ci --include=dev`** to install @types packages
+- Verify all dependencies (and devDependencies) are in `package.json`
 
 ### "Database migration fails"
 - Check migration file is committed to git
