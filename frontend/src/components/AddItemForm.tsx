@@ -2,10 +2,11 @@ import { FormEvent, useState } from 'react';
 
 interface AddItemFormProps {
   onSubmit: (name: string, price: number) => void;
+  onError?: (message: string) => void;
   isLoading?: boolean;
 }
 
-export function AddItemForm({ onSubmit, isLoading = false }: AddItemFormProps) {
+export function AddItemForm({ onSubmit, onError, isLoading = false }: AddItemFormProps) {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
 
@@ -13,13 +14,13 @@ export function AddItemForm({ onSubmit, isLoading = false }: AddItemFormProps) {
     e.preventDefault();
 
     if (!name.trim() || !price.trim()) {
-      alert('Please fill in all fields');
+      onError?.('Please fill in all fields');
       return;
     }
 
     const priceNum = parseFloat(price);
     if (isNaN(priceNum) || priceNum < 0) {
-      alert('Please enter a valid price');
+      onError?.('Please enter a valid price');
       return;
     }
 

@@ -1,10 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { api } from '../utils/api';
+import { Toast } from '../components/Toast';
 
 export function LandingPage() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [showToast, setShowToast] = useState(false);
 
   const handleCreateList = async () => {
     try {
@@ -12,7 +15,9 @@ export function LandingPage() {
       const response = await api.createList();
       navigate(`/list/${response.id}`);
     } catch (error) {
-      alert(`Failed to create list: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const message = `Failed to create list: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      setToastMessage(message);
+      setShowToast(true);
     } finally {
       setIsLoading(false);
     }
@@ -55,6 +60,13 @@ export function LandingPage() {
           <p className="text-sm text-slate-600">Add prices and see your total.</p>
         </div>
       </div>
+
+      <Toast
+        message={toastMessage}
+        type="error"
+        isVisible={showToast}
+        onClose={() => setShowToast(false)}
+      />
     </div>
   );
 }

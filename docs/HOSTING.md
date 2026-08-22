@@ -105,15 +105,16 @@ npm run build  # Creates optimized dist/ folder
    - Select `backend` directory as root
    - **Name:** `todo-api`
    - **Environment:** Node
-   - **Build Command:** `npm ci --include=dev && npm run prisma:generate && npm run build`
+   - **Build Command:** `npm ci --include=dev && npm run prisma:generate && npm run prisma:migrate:deploy && npm run build`
    - **Start Command:** `npm run start`
    
    **Build Command Breakdown:**
    - `npm ci --include=dev` — Install dependencies AND devDependencies (needed for TypeScript types)
    - `npm run prisma:generate` — Generate Prisma client
+   - `npm run prisma:migrate:deploy` — **Run database migrations** (creates tables!)
    - `npm run build` — **Compile TypeScript to JavaScript** (critical step!)
    
-   **Important:** Use `npm ci --include=dev` (not just `npm install`) to ensure @types packages are installed for type checking
+   **Important:** Include `npm run prisma:migrate:deploy` to create database tables on first deployment
 
 4. **Configure Environment Variables**
    - In web service settings → "Environment"
@@ -154,10 +155,10 @@ npm run build  # Creates optimized dist/ folder
    - Set root directory: `backend`
 
 3. **Configure Build & Start**
-   - **Build Command:** `npm ci --include=dev && npm run prisma:generate && npm run build`
+   - **Build Command:** `npm ci --include=dev && npm run prisma:generate && npm run prisma:migrate:deploy && npm run build`
    - **Start Command:** `npm run start`
    - Set in project settings → Variables or Railway.toml
-   - **Important:** Use `npm ci --include=dev` to ensure @types packages are installed
+   - **Important:** Include `npm run prisma:migrate:deploy` to run database migrations
 
 4. **Configure Environment**
    - Add `NODE_ENV=production`
@@ -409,6 +410,13 @@ curl https://yourtodo.vercel.app
 - Verify `npm run build` works locally first
 - **Ensure build command includes `npm ci --include=dev`** to install @types packages
 - Verify all dependencies (and devDependencies) are in `package.json`
+
+### "The table `public.lists` does not exist" (500 Error)
+- **Cause:** Prisma migrations haven't been run on the production database
+- **Fix:** Build command must include `npm run prisma:migrate:deploy`
+- **Update Render Build Command to:** `npm ci --include=dev && npm run prisma:generate && npm run prisma:migrate:deploy && npm run build`
+- **Steps:** Render Settings → Build Command → Save → Redeploy (wait 2-3 minutes)
+- After redeploy, database tables will be created automatically
 
 ### "Database migration fails"
 - Check migration file is committed to git

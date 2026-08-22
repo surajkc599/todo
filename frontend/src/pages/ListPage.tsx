@@ -13,7 +13,8 @@ export function ListPage() {
   const [isLoadingList, setIsLoadingList] = useState(true);
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string>('');
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [showToast, setShowToast] = useState(false);
 
   // Fetch list data
@@ -23,11 +24,13 @@ export function ListPage() {
     const fetchList = async () => {
       try {
         setIsLoadingList(true);
-        setError(null);
         const data = await api.getList(id);
         setList(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load list');
+        const message = err instanceof Error ? err.message : 'Failed to load list';
+        setToastMessage(message);
+        setToastType('error');
+        setShowToast(true);
       } finally {
         setIsLoadingList(false);
       }
@@ -41,14 +44,19 @@ export function ListPage() {
 
     try {
       setIsAddingItem(true);
-      setError(null);
       const newItem = await api.createItem({ text, price, listId: id });
       setList({
         ...list,
         items: [...list.items, newItem],
       });
+      setToastMessage('Item added');
+      setToastType('success');
+      setShowToast(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add item');
+      const message = err instanceof Error ? err.message : 'Failed to add item';
+      setToastMessage(message);
+      setToastType('error');
+      setShowToast(true);
     } finally {
       setIsAddingItem(false);
     }
@@ -58,14 +66,16 @@ export function ListPage() {
     if (!id || !list) return;
 
     try {
-      setError(null);
       await api.updateItem(id, itemId, { done });
       setList({
         ...list,
         items: list.items.map((item) => (item.id === itemId ? { ...item, done } : item)),
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update item');
+      const message = err instanceof Error ? err.message : 'Failed to update item';
+      setToastMessage(message);
+      setToastType('error');
+      setShowToast(true);
     }
   };
 
@@ -73,14 +83,16 @@ export function ListPage() {
     if (!id || !list) return;
 
     try {
-      setError(null);
       await api.deleteItem(id, itemId);
       setList({
         ...list,
         items: list.items.filter((item) => item.id !== itemId),
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete item');
+      const message = err instanceof Error ? err.message : 'Failed to delete item';
+      setToastMessage(message);
+      setToastType('error');
+      setShowToast(true);
     }
   };
 
@@ -89,14 +101,19 @@ export function ListPage() {
 
     try {
       setUpdatingItemId(itemId);
-      setError(null);
       await api.updateItem(id, itemId, { text, price });
       setList({
         ...list,
         items: list.items.map((item) => (item.id === itemId ? { ...item, text, price } : item)),
       });
+      setToastMessage('Item updated');
+      setToastType('success');
+      setShowToast(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update item');
+      const message = err instanceof Error ? err.message : 'Failed to update item';
+      setToastMessage(message);
+      setToastType('error');
+      setShowToast(true);
     } finally {
       setUpdatingItemId(null);
     }
@@ -107,10 +124,14 @@ export function ListPage() {
     navigator.clipboard
       .writeText(url)
       .then(() => {
+        setToastMessage('Link copied to clipboard!');
+        setToastType('success');
         setShowToast(true);
       })
       .catch(() => {
-        setError(`Share this link: ${url}`);
+        setToastMessage(`Share this link: ${url}`);
+        setToastType('error');
+        setShowToast(true);
       });
   };
 
@@ -168,16 +189,18 @@ export function ListPage() {
           </div>
         </div>
 
-        {/* Error message */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded">
-            <p className="text-red-700 font-medium text-sm">{error}</p>
-          </div>
-        )}
 
         {/* Add Item Form */}
         <div className="mb-10">
-          <AddItemForm onSubmit={handleAddItem} isLoading={isAddingItem} />
+          <AddItemForm
+            onSubmit={handleAddItem}
+            onError={(message) => {
+              setToastMessage(message);
+              setToastType('error');
+              setShowToast(true);
+            }}
+            isLoading={isAddingItem}
+          />
         </div>
 
         {/* Items List */}
@@ -229,7 +252,8 @@ export function ListPage() {
       </div>
 
       <Toast
-        message="Link copied to clipboard!"
+        message={toastMessage}
+        type={toastType}
         isVisible={showToast}
         onClose={() => setShowToast(false)}
       />

@@ -38,7 +38,11 @@ async function apiFetch<T>(endpoint: string, options: FetchOptions = {}): Promis
 
   if (!response.ok) {
     const error = (await response.json().catch(() => ({}))) as ErrorResponse;
-    throw new Error(error.message || error.error || `API error: ${response.status}`);
+    const errorMessage =
+      error.message ||
+      error.error ||
+      (response.status === 500 ? 'Server error. Please try again later.' : `Request failed: ${response.statusText}`);
+    throw new Error(errorMessage);
   }
 
   const result: ApiResponse<T> = await response.json();
