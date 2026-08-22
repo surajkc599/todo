@@ -1,0 +1,44 @@
+// Prisma Schema for Todo App v1
+// Defines the database models for managing todo lists and items
+// Database: PostgreSQL
+// Migrations: Auto-generated via `prisma migrate`
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// List model represents a collection of todo items
+// Each list can contain multiple items
+model List {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  // Relation to items in this list
+  items     Item[]
+
+  @@map("lists")
+}
+
+// Item model represents individual todo items
+// Each item belongs to a specific list
+model Item {
+  id        String   @id @default(uuid())
+  listId    String
+  text      String
+  done      Boolean  @default(false)
+  price     Decimal?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Foreign key relation to List
+  list      List     @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  // Index on listId for efficient querying by list
+  @@index([listId])
+  @@map("items")
+}
