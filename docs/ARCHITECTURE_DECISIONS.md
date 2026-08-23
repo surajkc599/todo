@@ -464,4 +464,59 @@ This document records every architectural decision made during the planning phas
 
 ---
 
+## 17. Data Model: Hierarchical Items (Groups & Sub-tasks)
+
+**Decision:** Use hierarchical items with `parentItemId` field. Groups (parent = null) contain sub-tasks (parent = group ID). Max nesting: 1 level deep.
+
+**Alternatives:**
+- **Flat items** — All items at same level, no grouping
+- **Hierarchical (chosen)** — Items have optional `parentItemId` for parent-child relationships
+- **Full tree structure** — Unlimited nesting (groups → sub-groups → items → etc.)
+
+**Tradeoffs:**
+
+| Hierarchical (1 level) | Flat | Full Tree |
+|---|---|---|
+| Organized, scannable UX | Simpler schema | Maximum flexibility |
+| One cascade delete (groups → children) | No cascade complexity | Complex recursion queries |
+| Easy to query (one join) | Simpler queries | Expensive queries (recursive CTEs) |
+| Sufficient for family lists | Works if lists stay small | Overkill for v1 |
+| Clear group-level costs | No grouping | Complex cost aggregation |
+
+**Decision Rationale:**
+- Families naturally organize lists into categories (Groceries, Hardware, Chores)
+- One level of nesting (groups → sub-tasks) is sufficient; no need for unlimited depth
+- Keeps queries simple: `items WHERE parentItemId = null` for groups, `items WHERE parentItemId = groupId` for sub-tasks
+- Cascade delete is straightforward: deleting a group auto-deletes its sub-tasks
+- UX is cleaner: accordion UI shows groups, tabs show Open/Completed sub-tasks per group
+
+**Implementation:**
+- Item schema: Add nullable `parentItemId` field pointing to another item's UUID
+- Index on `parentItemId` for fast child lookups
+- Cascade delete rule: If parent item deleted, all children deleted automatically
+- API: Single endpoint accepts `parentItemId` param. Frontend organizes response into hierarchy.
+
+**Schema Change:**
+```prisma
+model Item {
+  id           String   @id @default(uuid())
+  listId       String
+  text         String
+  done         Boolean  @default(false)
+  price        Decimal?
+  parentItemId String?  // NEW: null = group, set = sub-task
+  
+  list         List     @relation(fields: [listId], references: [id], onDelete: Cascade)
+  parent       Item?    @relation("ChildItems", fields: [parentItemId], references: [id], onDelete: Cascade)
+  children     Item[]   @relation("ChildItems")
+  
+  @@index([listId])
+  @@index([parentItemId])  // NEW: for fast child lookups
+}
+```
+
+**Outcome:** ✅ Hierarchical items with `parentItemId`. 1-level nesting (groups → sub-tasks). Cascade delete on parent deletion.
+
+---
+
 **These decisions are not permanent.** They're optimal for v1. As the app grows and real usage patterns emerge, revisit this document and adjust.

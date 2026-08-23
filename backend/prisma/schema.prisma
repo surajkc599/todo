@@ -26,19 +26,28 @@ model List {
 
 // Item model represents individual todo items
 // Each item belongs to a specific list
+// Items can be organized hierarchically: groups (parentItemId = null) contain sub-tasks (parentItemId = groupId)
 model Item {
-  id        String   @id @default(uuid())
-  listId    String
-  text      String
-  done      Boolean  @default(false)
-  price     Decimal?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(uuid())
+  listId       String
+  text         String
+  done         Boolean  @default(false)
+  price        Decimal?
+  parentItemId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   // Foreign key relation to List
-  list      List     @relation(fields: [listId], references: [id], onDelete: Cascade)
+  list         List     @relation(fields: [listId], references: [id], onDelete: Cascade)
 
-  // Index on listId for efficient querying by list
+  // Self-referential relation for hierarchical items (groups → sub-tasks)
+  // parent: points to parent item if this is a sub-task (null if this is a group)
+  // children: contains all child items if this is a group
+  parent       Item?    @relation("ChildItems", fields: [parentItemId], references: [id], onDelete: Cascade)
+  children     Item[]   @relation("ChildItems")
+
+  // Indexes for efficient querying
   @@index([listId])
+  @@index([parentItemId])
   @@map("items")
 }

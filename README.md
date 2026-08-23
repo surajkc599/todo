@@ -37,34 +37,11 @@ npm run dev
 ✨ **Create Lists** - Click "Create New List" to start
 🔗 **Share Instantly** - Copy link, share with anyone
 💾 **Auto-Save** - Everything syncs to database
-💰 **Track Costs** - Add prices to items
+🎯 **Organized Groups** - Create parent items (groups), add sub-tasks within each
+💰 **Track Costs** - Add prices to groups and sub-tasks separately
+📊 **Track Progress** - See completion status per group with Open/Completed tabs
 ✅ **Collaborative** - Multiple people can edit same list
-🎨 **Clean UI** - Minimal, modern design
-
-## Project Structure
-
-```
-todo/
-├── backend/              # Express + Prisma + PostgreSQL
-│   ├── src/
-│   │   ├── routes/       # API endpoints
-│   │   ├── services/     # Business logic
-│   │   ├── middleware/   # Error handling
-│   │   └── types/        # TypeScript interfaces
-│   ├── prisma/           # Database schema
-│   └── README.md
-│
-├── frontend/             # React + Vite + TailwindCSS
-│   ├── src/
-│   │   ├── pages/        # LandingPage, ListPage
-│   │   ├── components/   # ItemRow, AddItemForm, Toast
-│   │   ├── utils/        # API client
-│   │   └── types/        # TypeScript interfaces
-│   └── README.md
-│
-├── docker-compose.yml    # Full stack setup
-└── README.md            # This file
-```
+🎨 **Clean UI** - Minimal, modern design with accordion organization
 
 ## Tech Stack
 
@@ -86,12 +63,20 @@ All endpoints return JSON. Success = HTTP 200/201, Error = HTTP 400/404/500
 
 **Lists:**
 - `POST /api/lists` → Create list
-- `GET /api/lists/:id` → Fetch list with items
+- `GET /api/lists/:id` → Fetch list with items (hierarchical: groups + sub-tasks)
 
-**Items:**
-- `POST /api/lists/:id/items` → Add item
-- `PATCH /api/lists/:id/items/:itemId` → Update (text, price, done)
-- `DELETE /api/lists/:id/items/:itemId` → Remove item
+**Items (Groups & Sub-tasks):**
+- `POST /api/lists/:id/items` → Add group or sub-task
+  - `text`: item name
+  - `price`: optional cost (€)
+  - `parentItemId`: optional (if provided, creates sub-task under parent group)
+- `PATCH /api/lists/:id/items/:itemId` → Update (text, price, done status)
+- `DELETE /api/lists/:id/items/:itemId` → Remove item (cascades: deleting group removes all sub-tasks)
+
+**Response Format:**
+Items are returned with `parentItemId` field. Frontend organizes them as:
+- Groups: items with `parentItemId = null`
+- Sub-tasks: items with `parentItemId` set
 
 See [Backend README](backend/README.md) for full details.
 
@@ -150,27 +135,36 @@ VITE_API_URL=http://localhost:3001/api
 
 ## Documentation
 
-- [Architecture Overview](docs/ARCHITECTURE.md)
-- [Hosting & Deployment](docs/HOSTING.md) — Vercel, Render/Railway, environment setup
+- [UX Design & Flows](docs/UX_DESIGN.md) — User interface, interactions, and design system
+- [Project Roadmap](docs/PLAN.md) — v1/v2/v3 feature plans and requirements
 - [Architecture Decisions](docs/ARCHITECTURE_DECISIONS.md) — Tech choices & tradeoffs
-- [Project Roadmap](docs/PLAN.md) — v1/v2/v3 feature plans
+- [Hosting & Deployment](docs/HOSTING.md) — Vercel, Render/Railway, environment setup
 - [Backend Guide](backend/README.md)
 - [Frontend Guide](frontend/README.md)
 
 ## Version History
 
 **v1 (Current):**
-- Basic todo list management
+- Basic todo list management with hierarchical groups
+- Groups: organize items into logical categories (e.g., Groceries, Hardware)
+- Sub-tasks: add items within each group with individual costs
+- Open/Completed tabs per group for better focus
 - Share via URL
-- Cost tracking
+- Cost tracking at group and sub-task level
 - Inline editing
+- Progress tracking per group
 
 **v2 (Planned):**
-- User accounts
-- List dashboard
-- Real-time collaboration
-- Drag & drop sorting
-- Offline sync
+- Real-time collaboration (WebSocket live updates)
+- Offline editing & sync
+- Drag & drop reordering
+- Better error handling with connection indicators
+
+**v3 (Future):**
+- User accounts & authentication
+- List dashboard ("My Lists")
+- Fine-grained permission management
+- Markdown descriptions for tasks
 
 ## Troubleshooting
 
@@ -179,16 +173,6 @@ VITE_API_URL=http://localhost:3001/api
 docker-compose down -v  # Remove volumes
 docker-compose up       # Fresh start
 ```
-
-**Port conflicts?**
-- Backend: Change `PORT` in `.env`
-- Frontend: Change Vite config
-- Database: Change `docker-compose.yml`
-
-**Database connection issues?**
-- Ensure PostgreSQL container is running: `docker ps`
-- Check `DATABASE_URL` matches compose config
-- Run migrations: `npm run prisma:migrate:dev`
 
 ## License
 

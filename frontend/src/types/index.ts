@@ -4,6 +4,8 @@ export interface Item {
   price: number | null;
   done: boolean;
   listId: string;
+  parentItemId?: string | null;
+  items?: Item[];
   createdAt: string;
   updatedAt: string;
 }
@@ -18,6 +20,7 @@ export interface CreateItemRequest {
   text: string;
   price?: number | null;
   done?: boolean;
+  parentItemId?: string;
 }
 
 export interface UpdateItemRequest {

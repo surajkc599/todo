@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '../utils/api';
 import { Toast } from '../components/Toast';
 
@@ -7,7 +7,25 @@ export function LandingPage() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error' | 'warning'>('error');
   const [showToast, setShowToast] = useState(false);
+
+  // Listen for slow request events
+  useEffect(() => {
+    const handleSlowRequest = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      if (customEvent.detail?.endpoint?.includes('/lists') && customEvent.detail?.isSlowRequest) {
+        setToastMessage(
+          '⏳ Server is starting up (free tier). This might take a few extra seconds. Thanks for your patience!'
+        );
+        setToastType('warning');
+        setShowToast(true);
+      }
+    };
+
+    window.addEventListener('slowRequest', handleSlowRequest);
+    return () => window.removeEventListener('slowRequest', handleSlowRequest);
+  }, []);
 
   const handleCreateList = async () => {
     try {
@@ -17,6 +35,7 @@ export function LandingPage() {
     } catch (error) {
       const message = `Failed to create list: ${error instanceof Error ? error.message : 'Unknown error'}`;
       setToastMessage(message);
+      setToastType('error');
       setShowToast(true);
     } finally {
       setIsLoading(false);
@@ -26,9 +45,9 @@ export function LandingPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-12 p-6">
       <div className="text-center max-w-2xl">
-        <h1 className="text-5xl font-bold text-slate-900 mb-4">Shared Todo</h1>
+        <h1 className="text-5xl font-bold text-slate-900 mb-4">Shared Shopping Lists</h1>
         <p className="text-lg text-slate-600 mb-8">
-          Create a list, share the link, collaborate with family
+          Create a list, track expenses, share with family & friends
         </p>
 
         <button
@@ -36,7 +55,7 @@ export function LandingPage() {
           disabled={isLoading}
           className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white font-semibold py-3 px-10 rounded text-base transition-colors disabled:cursor-not-allowed"
         >
-          {isLoading ? 'Creating...' : 'Create New List'}
+          {isLoading ? 'Creating...' : 'Create'}
         </button>
       </div>
 
@@ -63,7 +82,7 @@ export function LandingPage() {
 
       <Toast
         message={toastMessage}
-        type="error"
+        type={toastType}
         isVisible={showToast}
         onClose={() => setShowToast(false)}
       />

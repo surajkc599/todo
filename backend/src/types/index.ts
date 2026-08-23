@@ -13,6 +13,9 @@ export interface List {
 
 /**
  * Represents a Todo Item within a List
+ * Items can be organized hierarchically:
+ * - Groups: items with parentItemId = null (contain 'items' array)
+ * - Sub-tasks: items with parentItemId pointing to a group
  */
 export interface Item {
   id: string;
@@ -20,6 +23,8 @@ export interface Item {
   text: string;
   done: boolean;
   price?: number | null;
+  parentItemId?: string | null;
+  items?: Item[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,12 +40,15 @@ export interface Item {
 export type CreateListRequest = Record<string, never>;
 
 /**
- * DTO for creating a new item
+ * DTO for creating a new item (group or sub-task)
+ * - Omit parentItemId to create a group
+ * - Include parentItemId to create a sub-task under that group
  */
 export interface CreateItemRequest {
   text: string;
   price?: number;
   done?: boolean;
+  parentItemId?: string;
 }
 
 /**

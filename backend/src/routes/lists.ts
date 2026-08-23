@@ -108,4 +108,40 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/lists/{id}:
+ *   delete:
+ *     summary: Delete a list and all its items
+ *     tags: [Lists]
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: List ID
+ *     responses:
+ *       200:
+ *         description: List deleted successfully
+ *       404:
+ *         description: List not found
+ */
+router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    await listService.deleteList(id);
+
+    const response: ApiResponse<null> = {
+      message: 'List deleted successfully',
+    };
+
+    res.json(response);
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

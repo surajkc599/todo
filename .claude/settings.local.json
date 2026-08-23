@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node \"C:\\\\Users\\\\kcssu\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\bundled-skills\\\\2.1.239\\\\bbdc0e5a61add2b0081be48dc66f225b\\\\design\\\\seed-canvas.mjs\" --template \"C:\\\\Users\\\\kcssu\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\bundled-skills\\\\2.1.239\\\\bbdc0e5a61add2b0081be48dc66f225b\\\\design\\\\payload.template.html\" --out hierarchical-todos.html --title \"Hierarchical Todo List\" --artboard Main.dc.html --artboard AddSubTask.dc.html --canvas canvas.json)",
+      "Bash(docker-compose restart *)",
+      "PowerShell(docker-compose restart frontend)",
+      "PowerShell(docker-compose restart backend)",
+      "PowerShell(docker-compose restart backend frontend)"
+    ]
+  }
+}

@@ -10,8 +10,9 @@ import { sanitizeText } from '../utils/validation.js';
 import prisma from './prismaClient.js';
 
 /**
- * Create a new item in a list
+ * Create a new item in a list (group or sub-task)
  * Verifies list exists before creating item
+ * If parentItemId provided, verifies parent item exists in same list
  * Returns created item with all fields populated
  */
 export async function createItem(listId: string, data: CreateItemRequest): Promise<Item> {
@@ -26,6 +27,16 @@ export async function createItem(listId: string, data: CreateItemRequest): Promi
       throw new ApiError(404, 'List not found');
     }
 
+    // If parentItemId provided, verify parent item exists in same list
+    if (data.parentItemId) {
+      const parentItem = await prisma.item.findFirst({
+        where: { id: data.parentItemId, listId },
+      });
+      if (!parentItem) {
+        throw new ApiError(404, 'Parent item not found in this list');
+      }
+    }
+
     const sanitizedText = sanitizeText(data.text);
     const item = await prisma.item.create({
       data: {
@@ -33,6 +44,7 @@ export async function createItem(listId: string, data: CreateItemRequest): Promi
         text: sanitizedText,
         done: data.done || false,
         price: data.price || null,
+        parentItemId: data.parentItemId || null,
       },
     });
 

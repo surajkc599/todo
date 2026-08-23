@@ -21,7 +21,7 @@ const router = Router({ mergeParams: true }); // mergeParams to access :listId f
  * @swagger
  * /api/lists/{listId}/items:
  *   post:
- *     summary: Create a new item in a list
+ *     summary: Create a new item in a list (group or sub-task)
  *     tags: [Items]
  *     parameters:
  *       - name: listId
@@ -46,6 +46,10 @@ const router = Router({ mergeParams: true }); // mergeParams to access :listId f
  *               done:
  *                 type: boolean
  *                 description: Is item completed
+ *               parentItemId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: Parent item ID for sub-tasks (omit to create a group)
  *     responses:
  *       201:
  *         description: Item created
@@ -58,6 +62,8 @@ const router = Router({ mergeParams: true }); // mergeParams to access :listId f
  *                   $ref: '#/components/schemas/Item'
  *       400:
  *         description: Invalid input
+ *       404:
+ *         description: List or parent item not found
  */
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
