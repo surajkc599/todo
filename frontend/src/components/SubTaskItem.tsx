@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Item } from '../types';
+import { SubTask } from '../types';
 
 interface SubTaskItemProps {
-  item: Item;
+  item: SubTask;
   onToggle: (itemId: string, done: boolean) => void;
   onDelete: (itemId: string) => void;
   onUpdate: (itemId: string, text: string, price: number) => void;
@@ -80,19 +80,35 @@ export function SubTaskItem({
   }
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 bg-white border-b border-slate-100 hover:bg-slate-50">
+    <div className={`flex items-center gap-3 px-5 py-3 border-b transition-colors ${
+      item.done
+        ? 'bg-green-50 border-green-100 hover:bg-green-100'
+        : 'bg-white border-slate-100 hover:bg-slate-50'
+    }`}>
       <input
         type="checkbox"
         checked={item.done}
         onChange={(e) => onToggle(item.id, e.target.checked)}
-        className="w-5 h-5 cursor-pointer rounded border-slate-300"
+        className={`w-5 h-5 cursor-pointer rounded transition-all ${
+          item.done
+            ? 'border-green-500 bg-green-500 accent-green-600'
+            : 'border-slate-300 accent-blue-600'
+        }`}
       />
       <div className="flex-1">
-        <span className={`text-sm ${item.done ? 'line-through text-slate-400' : 'text-slate-900'}`}>
+        <span className={`text-sm font-medium ${
+          item.done
+            ? 'line-through text-slate-400'
+            : 'text-slate-900'
+        }`}>
           {item.text}
         </span>
       </div>
-      <span className="text-sm font-semibold text-blue-600 min-w-12 text-right">
+      <span className={`text-sm font-bold min-w-14 text-right ${
+        item.done
+          ? 'text-green-600'
+          : 'text-blue-600'
+      }`}>
         €{(item.price || 0).toFixed(2)}
       </span>
       <button

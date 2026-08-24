@@ -1,59 +1,71 @@
-import { useState, useEffect } from 'react';
-import { Item } from '../types';
+import { useState } from 'react';
+import { Task, SubTask } from '../types';
 import { SubTaskItem } from './SubTaskItem';
 import { AddSubTaskForm } from './AddSubTaskForm';
 
 interface GroupTabsProps {
-  group: Item;
-  openItems: Item[];
-  completedItems: Item[];
-  onAddSubTask: (groupId: string) => void;
-  onToggleItem: (itemId: string, done: boolean) => void;
-  onDeleteItem: (itemId: string) => void;
-  onUpdateItem: (itemId: string, text: string, price: number) => void;
+  task: Task;
+  openSubTasks: SubTask[];
+  completedSubTasks: SubTask[];
+  onToggleSubTask: (subTaskId: string, done: boolean) => void;
+  onDeleteSubTask: (subTaskId: string) => void;
+  onUpdateSubTask: (subTaskId: string, text: string, price: number) => void;
   onRefresh: () => void;
   updatingItemId: string | null;
-  isNewlyCreated?: boolean;
 }
 
 export function GroupTabs({
-  group,
-  openItems,
-  completedItems,
-  onAddSubTask,
-  onToggleItem,
-  onDeleteItem,
-  onUpdateItem,
+  task,
+  openSubTasks,
+  completedSubTasks,
+  onToggleSubTask,
+  onDeleteSubTask,
+  onUpdateSubTask,
   onRefresh,
   updatingItemId,
-  isNewlyCreated,
 }: GroupTabsProps) {
   const [activeTab, setActiveTab] = useState<'open' | 'completed'>('open');
   const [showAddForm, setShowAddForm] = useState(false);
 
   return (
     <div>
-      {/* Tabs */}
-      <div className="flex border-b border-slate-200">
+      {/* Tabs - Modern Style */}
+      <div className="flex border-b border-slate-200 bg-slate-50">
         <button
           onClick={() => setActiveTab('open')}
-          className={`flex-1 px-4 py-3 font-medium text-sm transition-colors ${
+          className={`flex-1 px-4 py-4 font-semibold text-sm transition-all relative ${
             activeTab === 'open'
-              ? 'text-blue-600 border-b-2 border-blue-600'
+              ? 'text-blue-600'
               : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          Open ({openItems.length})
+          <div className="flex items-center justify-center gap-2">
+            <span>📋 Open</span>
+            <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full">
+              {openSubTasks.length}
+            </span>
+          </div>
+          {activeTab === 'open' && (
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full"></div>
+          )}
         </button>
         <button
           onClick={() => setActiveTab('completed')}
-          className={`flex-1 px-4 py-3 font-medium text-sm transition-colors ${
+          className={`flex-1 px-4 py-4 font-semibold text-sm transition-all relative ${
             activeTab === 'completed'
-              ? 'text-blue-600 border-b-2 border-blue-600'
+              ? 'text-green-600'
               : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          Completed ({completedItems.length})
+          <div className="flex items-center justify-center gap-2">
+            <span>✓ Completed</span>
+            <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-full">
+              {completedSubTasks.length}
+            </span>
+          </div>
+          {activeTab === 'completed' && (
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-green-500 to-green-600 rounded-full"></div>
+          )}
         </button>
       </div>
 
@@ -61,20 +73,20 @@ export function GroupTabs({
       <div className="bg-white">
         {activeTab === 'open' && (
           <div>
-            {openItems.length === 0 ? (
+            {openSubTasks.length === 0 ? (
               <div className="px-4 py-8 text-center text-slate-500 text-sm">
                 No open items. Start by adding an item.
               </div>
             ) : (
               <div>
-                {openItems.map((item) => (
+                {openSubTasks.map((subTask) => (
                   <SubTaskItem
-                    key={item.id}
-                    item={item}
-                    onToggle={onToggleItem}
-                    onDelete={onDeleteItem}
-                    onUpdate={onUpdateItem}
-                    isUpdating={updatingItemId === item.id}
+                    key={subTask.id}
+                    item={subTask}
+                    onToggle={onToggleSubTask}
+                    onDelete={onDeleteSubTask}
+                    onUpdate={onUpdateSubTask}
+                    isUpdating={updatingItemId === subTask.id}
                   />
                 ))}
               </div>
@@ -92,7 +104,7 @@ export function GroupTabs({
             {showAddForm && (
               <div className="px-4 py-4 border-t border-slate-200 bg-slate-50">
                 <AddSubTaskForm
-                  groupId={group.id}
+                  taskId={task.id}
                   onSubmit={() => {
                     setShowAddForm(false);
                     onRefresh();
@@ -106,20 +118,20 @@ export function GroupTabs({
 
         {activeTab === 'completed' && (
           <div>
-            {completedItems.length === 0 ? (
+            {completedSubTasks.length === 0 ? (
               <div className="px-4 py-8 text-center text-slate-500 text-sm">
-                No purchased items yet.
+                No completed items yet.
               </div>
             ) : (
               <div>
-                {completedItems.map((item) => (
+                {completedSubTasks.map((subTask) => (
                   <SubTaskItem
-                    key={item.id}
-                    item={item}
-                    onToggle={onToggleItem}
-                    onDelete={onDeleteItem}
-                    onUpdate={onUpdateItem}
-                    isUpdating={updatingItemId === item.id}
+                    key={subTask.id}
+                    item={subTask}
+                    onToggle={onToggleSubTask}
+                    onDelete={onDeleteSubTask}
+                    onUpdate={onUpdateSubTask}
+                    isUpdating={updatingItemId === subTask.id}
                   />
                 ))}
               </div>

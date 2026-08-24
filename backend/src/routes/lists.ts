@@ -59,7 +59,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
  * @swagger
  * /api/lists/{id}:
  *   get:
- *     summary: Get a list by ID with all items
+ *     summary: Get a list by ID with paginated items
  *     tags: [Lists]
  *     parameters:
  *       - name: id
@@ -69,16 +69,46 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
  *           type: string
  *           format: uuid
  *         description: List ID
+ *       - name: limit
+ *         in: query
+ *         schema:
+ *           type: integer
+ *           default: 5
+ *         description: Number of items per page (max 100)
+ *       - name: offset
+ *         in: query
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: Number of items to skip
  *     responses:
  *       200:
- *         description: List retrieved successfully
+ *         description: List retrieved successfully with paginated items
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
  *                 data:
- *                   $ref: '#/components/schemas/List'
+ *                   type: object
+ *                   properties:
+ *                     list:
+ *                       $ref: '#/components/schemas/List'
+ *                     items:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Item'
+ *                     pagination:
+ *                       type: object
+ *                       properties:
+ *                         limit:
+ *                           type: integer
+ *                         offset:
+ *                           type: integer
+ *                         total:
+ *                           type: integer
+ *                         hasMore:
+ *                           type: boolean
  *       404:
  *         description: List not found
  *         content:
@@ -89,17 +119,27 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
+    const limit = Math.min(Math.max(1, parseInt(req.query.limit as string) || 5), 100);
+    const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
 
-    const list = await listService.getListById(id);
+    const result = await listService.getListById(id, limit, offset);
 
-    if (!list) {
+    if (!result) {
       return res.status(404).json({
         error: 'List not found',
       });
     }
 
-    const response: ApiResponse<List> = {
-      data: list,
+    const response: ApiResponse<any> = {
+      data: {
+        list: result.list,
+        pagination: {
+          limit,
+          offset,
+          total: result.total,
+          hasMore: offset + limit < result.total,
+        },
+      },
     };
 
     res.json(response);

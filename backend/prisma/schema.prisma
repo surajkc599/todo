@@ -12,42 +12,57 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// List model represents a collection of todo items
-// Each list can contain multiple items
+// List model represents a collection of shopping/todo tasks
+// Each list contains multiple tasks
 model List {
   id        String   @id @default(uuid())
   createdAt DateTime @default(now())
 
-  // Relation to items in this list
-  items     Item[]
+  // Relation to tasks in this list
+  tasks     Task[]
 
   @@map("lists")
 }
 
-// Item model represents individual todo items
-// Each item belongs to a specific list
-// Items can be organized hierarchically: groups (parentItemId = null) contain sub-tasks (parentItemId = groupId)
-model Item {
-  id           String   @id @default(uuid())
-  listId       String
-  text         String
-  done         Boolean  @default(false)
-  price        Decimal?
-  parentItemId String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+// Task model represents top-level tasks/categories
+// Examples: Groceries, Hardware, Medicine
+// Each task belongs to a specific list and can contain multiple subtasks
+model Task {
+  id          String    @id @default(uuid())
+  listId      String
+  text        String
+  description String?
+  price       Decimal?  // Budget for this task
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   // Foreign key relation to List
-  list         List     @relation(fields: [listId], references: [id], onDelete: Cascade)
+  list        List      @relation(fields: [listId], references: [id], onDelete: Cascade)
 
-  // Self-referential relation for hierarchical items (groups → sub-tasks)
-  // parent: points to parent item if this is a sub-task (null if this is a group)
-  // children: contains all child items if this is a group
-  parent       Item?    @relation("ChildItems", fields: [parentItemId], references: [id], onDelete: Cascade)
-  children     Item[]   @relation("ChildItems")
+  // Relation to subtasks
+  subtasks    SubTask[]
 
   // Indexes for efficient querying
   @@index([listId])
-  @@index([parentItemId])
-  @@map("items")
+  @@map("tasks")
+}
+
+// SubTask model represents individual items within a task
+// Examples: Milk (under Groceries), Screws (under Hardware)
+// Each subtask belongs to a specific task
+model SubTask {
+  id        String   @id @default(uuid())
+  taskId    String
+  text      String
+  price     Decimal?
+  done      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Foreign key relation to Task
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  // Indexes for efficient querying
+  @@index([taskId])
+  @@map("subtasks")
 }

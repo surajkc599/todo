@@ -4,66 +4,23 @@
  * Database operations implemented with Prisma ORM
  */
 
-import { List, Item, CreateListRequest } from '../types/index.js';
+import { List, Task, SubTask, CreateListRequest } from '../types/index.js';
 import { ApiError } from '../middleware/errorHandler.js';
 import prisma from './prismaClient.js';
 
 /**
- * Organize flat items array into hierarchical structure
- * Groups (parentItemId = null) contain their sub-items
- */
-function organizeItems(flatItems: Item[]): Item[] {
-  const groups: Item[] = [];
-  const itemMap = new Map<string, Item>();
-
-  // Create map of all items and convert prices
-  flatItems.forEach((item) => {
-    const isGroup = !item.parentItemId;
-    itemMap.set(item.id, {
-      ...item,
-      price: item.price ? Number(item.price) : null,
-      ...(isGroup && { items: [] }), // Only add items array to groups
-    });
-  });
-
-  // Build hierarchy
-  itemMap.forEach((item) => {
-    if (item.parentItemId === null || item.parentItemId === undefined) {
-      // This is a group (no parent)
-      groups.push(item);
-    } else {
-      // This is a sub-task, add to parent's items array
-      const parent = itemMap.get(item.parentItemId);
-      if (parent) {
-        if (!parent.items) {
-          parent.items = [];
-        }
-        parent.items.push(item);
-      }
-    }
-  });
-
-  return groups;
-}
-
-/**
  * Create a new list
  * Returns the created list with auto-generated ID and timestamp
- * Items are organized hierarchically (groups contain sub-items)
  */
 export async function createList(_data: CreateListRequest): Promise<List> {
   try {
     const list = await prisma.list.create({
       data: {},
-      include: { items: true },
     });
-
-    // Organize items hierarchically
-    const organizedItems = organizeItems(list.items as Item[]);
 
     return {
       ...list,
-      items: organizedItems,
+      tasks: [],
     };
   } catch (error) {
     if (error instanceof ApiError) {
@@ -75,31 +32,64 @@ export async function createList(_data: CreateListRequest): Promise<List> {
 }
 
 /**
- * Get a list by ID with all its items
+ * Get a list by ID with paginated tasks
  * Returns null if list does not exist
- * Items are organized hierarchically (groups contain sub-items)
+ * Supports pagination with limit/offset
  */
-export async function getListById(listId: string): Promise<List | null> {
+export async function getListById(
+  listId: string,
+  limit: number = 5,
+  offset: number = 0
+): Promise<{
+  list: List;
+  total: number;
+} | null> {
   try {
     if (!listId || typeof listId !== 'string') {
       throw new ApiError(400, 'Invalid list ID');
     }
 
+    // Validate pagination params
+    const validLimit = Math.min(Math.max(1, limit), 100); // Min 1, max 100
+    const validOffset = Math.max(0, offset);
+
     const list = await prisma.list.findUnique({
       where: { id: listId },
-      include: { items: true },
     });
 
     if (!list) {
       return null;
     }
 
-    // Organize items hierarchically
-    const organizedItems = organizeItems(list.items as Item[]);
+    // Get paginated tasks with their subtasks
+    const tasks = await prisma.task.findMany({
+      where: { listId },
+      include: {
+        subtasks: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: validLimit,
+      skip: validOffset,
+    });
+
+    // Convert Decimal prices to numbers
+    const tasksWithConvertedPrices: Task[] = tasks.map((task) => ({
+      ...task,
+      price: task.price ? Number(task.price) : null,
+      subtasks: task.subtasks.map((subtask) => ({
+        ...subtask,
+        price: subtask.price ? Number(subtask.price) : null,
+      })),
+    }));
+
+    // Get total count of tasks
+    const totalCount = await prisma.task.count({
+      where: { listId },
+    });
 
     return {
-      ...list,
-      items: organizedItems,
+      list: { ...list, tasks: tasksWithConvertedPrices },
+      total: totalCount,
     };
   } catch (error) {
     if (error instanceof ApiError) {
@@ -112,7 +102,7 @@ export async function getListById(listId: string): Promise<List | null> {
 
 /**
  * Delete a list by ID
- * Also deletes all items in the list (cascade delete via database)
+ * Also deletes all tasks and subtasks (cascade delete via database)
  */
 export async function deleteList(listId: string): Promise<void> {
   try {
@@ -126,7 +116,7 @@ export async function deleteList(listId: string): Promise<void> {
       throw new ApiError(404, 'List not found');
     }
 
-    // Delete the list (cascade delete handles items)
+    // Delete the list (cascade delete handles tasks and subtasks)
     await prisma.list.delete({
       where: { id: listId },
     });

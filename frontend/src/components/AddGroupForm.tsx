@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../utils/api';
+import { Task } from '../types';
 
 interface AddGroupFormProps {
-  onSuccess: (newGroup: any) => void;
+  onSuccess: (newTask: Task) => void;
   onError?: (message: string) => void;
   onCancel?: () => void;
   isLoading?: boolean;
@@ -49,14 +50,13 @@ export function AddGroupForm({ onSuccess, onError, onCancel, isLoading: external
 
     try {
       setIsLoading(true);
-      const newGroup = await api.createItem({
+      const newTask = await api.createTask(listId, {
         text,
         price: price || null,
-        listId,
       });
       setText('');
       setPrice(0);
-      onSuccess(newGroup);
+      onSuccess(newTask);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to create group';
       onError?.(message);
@@ -67,28 +67,30 @@ export function AddGroupForm({ onSuccess, onError, onCancel, isLoading: external
 
   return (
     <div className="bg-white border border-slate-200 rounded-lg p-6 mb-10">
-      <p className="text-slate-600 text-sm mb-6 text-center">
-        Your list is empty. Start by creating a category.
-      </p>
-      <div className="flex gap-3 items-end">
-        <div className="flex-1">
-          <label className="text-xs font-semibold text-slate-600 block mb-2">Category name</label>
+      {!showCancel && (
+        <p className="text-slate-600 text-sm mb-6 text-center">
+          Your list is empty. Start by creating a category.
+        </p>
+      )}
+      <div className="space-y-4">
+        <div>
+          <label className="text-sm font-semibold text-slate-700 block mb-2">Category name *</label>
           <input
             type="text"
             value={text}
             onChange={(e) => handleTextChange(e.target.value)}
-            placeholder="e.g., Groceries Hardware Utilities"
-            className={`w-full px-3 py-3 border rounded text-sm ${
+            placeholder="e.g., Groceries"
+            className={`w-full px-4 py-3 border rounded-lg text-base font-medium ${
               inputError ? 'border-red-400 bg-red-50' : 'border-slate-300'
-            }`}
+            } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
             onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
             autoFocus
             disabled={isLoading || externalLoading}
           />
-          {inputError && <p className="text-xs text-red-600 mt-1">{inputError}</p>}
+          {inputError && <p className="text-xs text-red-600 mt-1.5">{inputError}</p>}
         </div>
         <div>
-          <label className="text-xs font-semibold text-slate-600 block mb-2">Budget (€)</label>
+          <label className="text-sm font-semibold text-slate-700 block mb-2">Budget (€)</label>
           <input
             type="number"
             value={price}
@@ -96,26 +98,28 @@ export function AddGroupForm({ onSuccess, onError, onCancel, isLoading: external
             placeholder="0.00"
             step="0.01"
             min="0"
-            className="w-32 px-3 py-3 border border-slate-300 rounded text-sm"
+            className="w-full px-4 py-3 border border-slate-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             disabled={isLoading || externalLoading}
           />
         </div>
-        <button
-          onClick={handleSubmit}
-          disabled={isLoading || externalLoading || !text.trim()}
-          className="px-6 py-3 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 disabled:bg-slate-400 transition-colors"
-        >
-          {isLoading || externalLoading ? 'Creating...' : 'Add'}
-        </button>
-        {showCancel && (
+        <div className="flex gap-3 pt-2">
           <button
-            onClick={onCancel}
-            disabled={isLoading || externalLoading}
-            className="px-6 py-3 bg-slate-300 text-slate-700 rounded text-sm font-medium hover:bg-slate-400 transition-colors"
+            onClick={handleSubmit}
+            disabled={isLoading || externalLoading || !text.trim()}
+            className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg text-base font-semibold hover:bg-blue-700 disabled:bg-slate-400 transition-colors"
           >
-            Cancel
+            {isLoading || externalLoading ? 'Creating...' : 'Create Category'}
           </button>
-        )}
+          {showCancel && (
+            <button
+              onClick={onCancel}
+              disabled={isLoading || externalLoading}
+              className="flex-1 px-4 py-3 bg-slate-200 text-slate-700 rounded-lg text-base font-semibold hover:bg-slate-300 transition-colors"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

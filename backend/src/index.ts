@@ -10,7 +10,8 @@ import { corsMiddleware } from './middleware/cors.js';
 import { loggingMiddleware } from './middleware/logging.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import listRoutes from './routes/lists.js';
-import itemRoutes from './routes/items.js';
+import taskRoutes from './routes/tasks.js';
+import subtaskRoutes from './routes/subtasks.js';
 import { swaggerSpec } from './swagger.js';
 
 // Initialize Express app
@@ -61,8 +62,11 @@ const apiPrefix = '/api';
 // List routes: /api/lists
 app.use(`${apiPrefix}/lists`, listRoutes);
 
-// Item routes: /api/lists/:listId/items
-app.use(`${apiPrefix}/lists/:listId/items`, itemRoutes);
+// Task routes: /api/lists/:listId/tasks
+app.use(`${apiPrefix}/lists/:listId/tasks`, taskRoutes);
+
+// SubTask routes: /api/lists/:listId/subtasks
+app.use(`${apiPrefix}/lists/:listId/subtasks`, subtaskRoutes);
 
 /**
  * Error Handling (must be last)

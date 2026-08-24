@@ -3,13 +3,13 @@ import { useParams } from 'react-router-dom';
 import { api } from '../utils/api';
 
 interface AddSubTaskFormProps {
-  groupId: string;
+  taskId: string;
   onSubmit: () => void;
   onCancel: () => void;
   onError?: (message: string) => void;
 }
 
-export function AddSubTaskForm({ groupId, onSubmit, onCancel, onError }: AddSubTaskFormProps) {
+export function AddSubTaskForm({ taskId, onSubmit, onCancel, onError }: AddSubTaskFormProps) {
   const { id: listId } = useParams<{ id: string }>();
   const [text, setText] = useState('');
   const [price, setPrice] = useState(0);
@@ -48,11 +48,10 @@ export function AddSubTaskForm({ groupId, onSubmit, onCancel, onError }: AddSubT
 
     try {
       setIsLoading(true);
-      await api.createItem({
+      await api.createSubTask(listId, {
         text,
         price: price || null,
-        listId,
-        parentItemId: groupId,
+        taskId,
       });
       setText('');
       setPrice(0);

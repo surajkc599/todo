@@ -1,8 +1,8 @@
-import { Item } from '../types';
+import { SubTask } from '../types';
 import { useState } from 'react';
 
 interface ItemRowProps {
-  item: Item;
+  item: SubTask;
   onToggle: (id: string, done: boolean) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, text: string, price: number) => void;

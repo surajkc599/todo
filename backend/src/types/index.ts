@@ -8,23 +8,34 @@
 export interface List {
   id: string;
   createdAt: Date;
-  items?: Item[];
+  tasks?: Task[];
 }
 
 /**
- * Represents a Todo Item within a List
- * Items can be organized hierarchically:
- * - Groups: items with parentItemId = null (contain 'items' array)
- * - Sub-tasks: items with parentItemId pointing to a group
+ * Represents a Task (top-level category)
+ * Examples: Groceries, Hardware, Medicine
  */
-export interface Item {
+export interface Task {
   id: string;
   listId: string;
   text: string;
-  done: boolean;
+  description?: string | null;
   price?: number | null;
-  parentItemId?: string | null;
-  items?: Item[];
+  subtasks?: SubTask[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Represents a SubTask (item within a Task)
+ * Examples: Milk (under Groceries), Screws (under Hardware)
+ */
+export interface SubTask {
+  id: string;
+  taskId: string;
+  text: string;
+  price?: number | null;
+  done: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -40,24 +51,57 @@ export interface Item {
 export type CreateListRequest = Record<string, never>;
 
 /**
- * DTO for creating a new item (group or sub-task)
- * - Omit parentItemId to create a group
- * - Include parentItemId to create a sub-task under that group
+ * DTO for creating a new task
  */
-export interface CreateItemRequest {
+export interface CreateTaskRequest {
   text: string;
+  description?: string;
   price?: number;
-  done?: boolean;
-  parentItemId?: string;
 }
 
 /**
- * DTO for updating an item
+ * DTO for creating a new subtask
  */
-export interface UpdateItemRequest {
+export interface CreateSubTaskRequest {
+  text: string;
+  price?: number;
+  taskId: string;
+}
+
+/**
+ * DTO for updating a task
+ */
+export interface UpdateTaskRequest {
+  text?: string;
+  description?: string;
+  price?: number;
+}
+
+/**
+ * DTO for updating a subtask
+ */
+export interface UpdateSubTaskRequest {
   text?: string;
   done?: boolean;
   price?: number;
+}
+
+/**
+ * Pagination metadata
+ */
+export interface PaginationMeta {
+  limit: number;
+  offset: number;
+  total: number;
+  hasMore: boolean;
+}
+
+/**
+ * Paginated list response with tasks
+ */
+export interface PaginatedListResponse {
+  list: List;
+  pagination: PaginationMeta;
 }
 
 /**
@@ -69,3 +113,9 @@ export interface ApiResponse<T> {
   error?: string;
   message?: string;
 }
+
+/**
+ * Backward compatibility alias
+ * Task is used for both categories and items in the old Item model
+ */
+export type Item = Task;
