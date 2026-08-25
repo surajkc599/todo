@@ -23,14 +23,14 @@ export function GroupAccordion({
   onRefresh,
   updatingItemId,
 }: GroupAccordionProps) {
-  const [showSubTasks, setShowSubTasks] = useState(false);
-  const [showDescriptionText, setShowDescriptionText] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDescriptionModal, setShowDescriptionModal] = useState(false);
 
   const subTasks = task.subtasks || [];
   const openSubTasks = subTasks.filter((subTask) => !subTask.done);
   const completedSubTasks = subTasks.filter((subTask) => subTask.done);
+  const allCompleted = subTasks.length > 0 && completedSubTasks.length === subTasks.length;
 
   // Calculate spent amount from sub-tasks
   const spent = subTasks.reduce((sum, subTask) => sum + (subTask.price || 0), 0);
@@ -68,13 +68,28 @@ export function GroupAccordion({
   return (
     <>
       <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-200">
-        {/* Task Header Card */}
-        <div>
-          <div className="flex items-center justify-between px-6 py-5 bg-gradient-to-r from-slate-50 to-slate-100 group">
+        {/* Clickable Header */}
+        <div
+          onClick={() => setIsExpanded(!isExpanded)}
+          className={`flex items-center justify-between px-6 py-5 bg-gradient-to-r transition-colors group cursor-pointer ${
+            allCompleted
+              ? 'from-green-50 to-green-100 hover:from-green-100 hover:to-green-150'
+              : 'from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-150'
+          }`}
+        >
+          <div className="flex items-center gap-4 flex-1">
+            <span className={`text-slate-400 text-xl transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
+              ▼
+            </span>
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-slate-900">
+              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                {allCompleted && <span className="text-green-600">✓</span>}
                 {task.text}
-                <span className="text-xs font-semibold text-slate-500 ml-3 bg-slate-200 px-2 py-1 rounded-full">
+                <span className={`text-xs font-semibold ml-3 px-2 py-1 rounded-full ${
+                  allCompleted
+                    ? 'bg-green-200 text-green-700'
+                    : 'bg-slate-200 text-slate-500'
+                }`}>
                   {subTasks.length} items
                 </span>
               </h3>
@@ -82,8 +97,10 @@ export function GroupAccordion({
                 Created {new Date(task.createdAt).toLocaleDateString()} at {new Date(task.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </p>
             </div>
+          </div>
 
-            {/* Budget Info */}
+            {/* Budget Info - Show if budget or spent > 0, or if editing */}
+            {(budget > 0 || spent > 0 || isEditingBudget) && (
             <div className="flex items-center gap-6 mr-4">
               {isEditingBudget ? (
                 <div className="flex items-center gap-2">
@@ -125,76 +142,58 @@ export function GroupAccordion({
                       €{spent.toFixed(2)}
                     </p>
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsEditingBudget(true);
-                    }}
-                    className="px-3 py-1 text-slate-500 hover:text-slate-900 hover:bg-slate-200 rounded transition-colors opacity-0 group-hover:opacity-100"
-                    title="Edit budget"
-                  >
-                    ✎
-                  </button>
                 </div>
               )}
             </div>
+            )}
 
+          {/* Edit Budget Button - Always show for adding budget when both are 0 */}
+          {!isEditingBudget && budget === 0 && spent === 0 && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                setShowDescriptionModal(true);
+                setIsEditingBudget(true);
               }}
               className="px-3 py-1 text-slate-500 hover:text-slate-900 hover:bg-slate-200 rounded transition-colors opacity-0 group-hover:opacity-100"
-              title="Edit description"
+              title="Add budget"
             >
-              📝
+              💰
             </button>
+          )}
 
-            <button
-              onClick={handleDeleteTask}
-              className="px-3 py-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors opacity-0 group-hover:opacity-100"
-              title="Delete category"
-            >
-              ✕
-            </button>
-          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowDescriptionModal(true);
+            }}
+            className="px-3 py-1 text-slate-500 hover:text-slate-900 hover:bg-slate-200 rounded transition-colors opacity-0 group-hover:opacity-100"
+            title="Edit description"
+          >
+            📝
+          </button>
+
+          <button
+            onClick={handleDeleteTask}
+            className="px-3 py-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors opacity-0 group-hover:opacity-100"
+            title="Delete category"
+          >
+            ✕
+          </button>
         </div>
 
-        {/* Description Card */}
-        {task.description && (
+        {/* Expanded Content - Description + Items */}
+        {isExpanded && (
           <div className="border-t border-slate-200">
-            <button
-              onClick={() => setShowDescriptionText(!showDescriptionText)}
-              className="w-full px-6 py-4 bg-gradient-to-r from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-150 transition-colors flex items-center justify-between group"
-            >
-              <h4 className="font-semibold text-slate-900">Description</h4>
-              <span className={`text-slate-400 text-lg transition-transform duration-200 ${showDescriptionText ? 'rotate-180' : ''}`}>
-                ▼
-              </span>
-            </button>
-
-            {showDescriptionText && (
-              <div className="px-6 py-4 border-t border-slate-200">
+            {/* Description Section */}
+            {task.description && (
+              <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+                <h4 className="font-semibold text-slate-900 mb-2">Description</h4>
                 <DescriptionDisplay description={task.description} />
               </div>
             )}
-          </div>
-        )}
 
-        {/* Subtasks Card */}
-        <div className="border-t border-slate-200">
-          <button
-            onClick={() => setShowSubTasks(!showSubTasks)}
-            className="w-full px-6 py-4 bg-gradient-to-r from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-150 transition-colors flex items-center justify-between group"
-          >
-            <h4 className="font-semibold text-slate-900">Items</h4>
-            <span className={`text-slate-400 text-lg transition-transform duration-200 ${showSubTasks ? 'rotate-180' : ''}`}>
-              ▼
-            </span>
-          </button>
-
-          {showSubTasks && (
-            <div className="border-t border-slate-200">
+            {/* Items Section */}
+            <div>
               <GroupTabs
                 task={task}
                 openSubTasks={openSubTasks}
@@ -206,8 +205,8 @@ export function GroupAccordion({
                 updatingItemId={updatingItemId}
               />
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       <ConfirmDialog

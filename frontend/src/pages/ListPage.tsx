@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { List, Task, SubTask } from '../types';
 import { api } from '../utils/api';
 import { DEFAULT_PAGE_SIZE } from '../constants';
@@ -19,24 +19,73 @@ export function ListPage() {
   const [showToast, setShowToast] = useState(false);
   const [showAddGroupForm, setShowAddGroupForm] = useState(false);
 
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(0);
-  const pageSize = DEFAULT_PAGE_SIZE; // 5 tasks per page
-  const [totalTasks, setTotalTasks] = useState(0);
-  const [hasMore, setHasMore] = useState(false);
+  // Virtual scroll state - infinite scroll instead of pagination
+  const [allTasks, setAllTasks] = useState<Task[]>([]);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const loadedOffsetRef = useRef(0);
+  const totalCountRef = useRef(0);
+  const pageSize = DEFAULT_PAGE_SIZE;
 
-  // Fetch list data with pagination
+  // View state - Active or Completed tasks
+  const [viewMode, setViewMode] = useState<'active' | 'completed'>('active');
+
+  // Load more tasks function
+  const isLoadingRef = useRef(false);
+
+  const loadMoreTasks = useCallback(async () => {
+    if (!id || isLoadingRef.current || loadedOffsetRef.current >= totalCountRef.current) return;
+
+    isLoadingRef.current = true;
+    setIsLoadingMore(true);
+
+    try {
+      const data = await api.getList(id, pageSize, loadedOffsetRef.current);
+      setAllTasks(prev => [...prev, ...data.list.tasks]);
+      loadedOffsetRef.current += pageSize;
+      totalCountRef.current = data.pagination.total;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load more tasks';
+      setToastMessage(message);
+      setToastType('error');
+      setShowToast(true);
+    } finally {
+      isLoadingRef.current = false;
+      setIsLoadingMore(false);
+    }
+  }, [id, pageSize]);
+
+  // Initial load with auto-load until page is scrollable or all tasks loaded
   useEffect(() => {
     if (!id) return;
 
-    const fetchList = async () => {
+    const fetchInitialList = async () => {
       try {
         setIsLoadingList(true);
-        const offset = currentPage * pageSize;
+        let allLoadedTasks: Task[] = [];
+        let offset = 0;
+        let total = 0;
+
+        // Load initial batch
         const data = await api.getList(id, pageSize, offset);
+        allLoadedTasks = data.list.tasks;
+        total = data.pagination.total;
+        offset = pageSize;
+
+        // Auto-load more batches if we haven't loaded all tasks
+        // This ensures there's enough content to make the page scrollable
+        while (offset < total && allLoadedTasks.length < pageSize * 2) {
+          const nextData = await api.getList(id, pageSize, offset);
+          allLoadedTasks = [...allLoadedTasks, ...nextData.list.tasks];
+          offset += pageSize;
+          total = nextData.pagination.total;
+        }
+
         setList(data.list);
-        setTotalTasks(data.pagination.total);
-        setHasMore(data.pagination.hasMore);
+        setAllTasks(allLoadedTasks);
+        loadedOffsetRef.current = offset;
+        totalCountRef.current = total;
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to load list';
         setToastMessage(message);
@@ -47,23 +96,81 @@ export function ListPage() {
       }
     };
 
-    fetchList();
-  }, [id, currentPage, pageSize]);
+    fetchInitialList();
+  }, [id, pageSize]);
 
-  // Refetch the current page
+  // Infinite scroll sentinel observer
+  useEffect(() => {
+    const setupScroll = () => {
+      const container = scrollContainerRef.current;
+      if (!container) {
+        requestAnimationFrame(setupScroll);
+        return;
+      }
+
+      const abortController = new AbortController();
+
+      const handleScroll = () => {
+        if (!sentinelRef.current || isLoadingRef.current || loadedOffsetRef.current >= totalCountRef.current) {
+          return;
+        }
+
+        const sentinel = sentinelRef.current!;
+        const containerRect = container.getBoundingClientRect();
+        const sentinelRect = sentinel.getBoundingClientRect();
+
+        const isNearBottom = sentinelRect.top - containerRect.bottom < 100;
+
+        if (isNearBottom) {
+          loadMoreTasks();
+        }
+      };
+
+      container.addEventListener('scroll', handleScroll, { passive: true, signal: abortController.signal });
+
+      return () => {
+        abortController.abort();
+      };
+    };
+
+    const cleanup = setupScroll();
+    return () => cleanup?.();
+  }, [loadMoreTasks]);
+
+  // Refresh by reloading from start
   const refreshList = async () => {
     if (!id) return;
     try {
-      const offset = currentPage * pageSize;
+      setIsLoadingList(true);
+      let allLoadedTasks: Task[] = [];
+      let offset = 0;
+      let total = 0;
+
+      // Load initial batch
       const data = await api.getList(id, pageSize, offset);
+      allLoadedTasks = data.list.tasks;
+      total = data.pagination.total;
+      offset = pageSize;
+
+      // Auto-load more batches to make page scrollable
+      while (offset < total && allLoadedTasks.length < pageSize * 2) {
+        const nextData = await api.getList(id, pageSize, offset);
+        allLoadedTasks = [...allLoadedTasks, ...nextData.list.tasks];
+        offset += pageSize;
+        total = nextData.pagination.total;
+      }
+
       setList(data.list);
-      setTotalTasks(data.pagination.total);
-      setHasMore(data.pagination.hasMore);
+      setAllTasks(allLoadedTasks);
+      loadedOffsetRef.current = offset;
+      totalCountRef.current = total;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to refresh list';
       setToastMessage(message);
       setToastType('error');
       setShowToast(true);
+    } finally {
+      setIsLoadingList(false);
     }
   };
 
@@ -138,10 +245,10 @@ export function ListPage() {
     try {
       const data = await api.getList(id, pageSize, 0);
       setList(data.list);
-      setTotalTasks(data.pagination.total);
-      setHasMore(data.pagination.hasMore);
-      setCurrentPage(0);
-      setToastMessage('Category created');
+      setAllTasks(data.list.tasks);
+      loadedOffsetRef.current = pageSize;
+      totalCountRef.current = data.pagination.total;
+      setToastMessage('Task created');
       setToastType('success');
       setShowToast(true);
     } catch (err) {
@@ -167,6 +274,7 @@ export function ListPage() {
         setShowToast(true);
       });
   };
+
 
 
   if (isLoadingList) {
@@ -214,9 +322,23 @@ export function ListPage() {
     }, 0);
   };
 
-  const totalCost = calculateTotalCost(list.tasks || []);
-  const completedItems = calculateCompletedItems(list.tasks || []);
-  const totalItems = countAllItems(list.tasks || []);
+  // Filter tasks based on view mode (active or completed)
+  const isTaskCompleted = (task: Task): boolean => {
+    const subTasks = task.subtasks || [];
+    return subTasks.length > 0 && subTasks.every(st => st.done);
+  };
+
+  const filteredTasks = allTasks.filter(task =>
+    viewMode === 'active' ? !isTaskCompleted(task) : isTaskCompleted(task)
+  );
+
+  const totalCost = calculateTotalCost(filteredTasks);
+  const completedItems = calculateCompletedItems(filteredTasks);
+  const totalItems = countAllItems(filteredTasks);
+
+  // Count active and completed tasks
+  const activeTasks = allTasks.filter(t => !isTaskCompleted(t)).length;
+  const completedTasks = allTasks.filter(t => isTaskCompleted(t)).length;
 
   return (
     <div className="fixed inset-0 bg-slate-50 flex flex-col overflow-hidden">
@@ -239,7 +361,7 @@ export function ListPage() {
                   onClick={() => setShowAddGroupForm(true)}
                   className="bg-slate-200 hover:bg-slate-300 text-slate-900 font-semibold py-3 px-6 rounded transition-colors whitespace-nowrap"
                 >
-                  + Add Category
+                  + Add Task
                 </button>
               )}
               <button
@@ -288,85 +410,116 @@ export function ListPage() {
         </div>
       )}
 
+      {/* Sticky header with Tasks count and toggle */}
+      {(list.tasks?.length || 0) > 0 && filteredTasks.length > 0 && (
+        <div className="sticky top-0 bg-white border-b border-slate-200 z-10">
+          <div className="max-w-4xl mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900">
+                Tasks <span className="text-slate-500 text-sm">({totalCountRef.current})</span>
+              </h2>
+              <div className="flex items-center bg-slate-200 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setViewMode('active')}
+                  className={`px-4 py-2 font-medium text-sm transition-colors ${
+                    viewMode === 'active'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-200 text-slate-700 hover:text-slate-900'
+                  }`}
+                >
+                  Active ({activeTasks})
+                </button>
+                <button
+                  onClick={() => setViewMode('completed')}
+                  className={`px-4 py-2 font-medium text-sm transition-colors ${
+                    viewMode === 'completed'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-slate-200 text-slate-700 hover:text-slate-900'
+                  }`}
+                >
+                  Completed ({completedTasks})
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content - Scrollable (Categories only) */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-8">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-8">
         <div className="max-w-4xl mx-auto">
 
-        {/* Add Category Modal */}
+        {/* Add Task Modal */}
         <AddCategoryModal
           isOpen={showAddGroupForm}
           onClose={() => setShowAddGroupForm(false)}
           onSuccess={handleAddTask}
-          onError={(message) => {
+          onError={(message: string) => {
             setToastMessage(message);
             setToastType('error');
             setShowToast(true);
           }}
         />
 
-        {/* Categories List */}
+        {/* Tasks List */}
         {(list.tasks?.length || 0) === 0 ? (
           <div className="text-center py-12">
-            <p className="text-slate-500 text-lg mb-4">No categories yet</p>
+            <p className="text-slate-500 text-lg mb-4">No tasks yet</p>
             <button
               onClick={() => setShowAddGroupForm(true)}
               className="bg-blue-600 text-white px-6 py-3 rounded font-medium hover:bg-blue-700"
             >
-              + Create First Category
+              + Create First Task
             </button>
+          </div>
+        ) : filteredTasks.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-slate-500 text-lg mb-4">
+              {viewMode === 'active' ? 'No active tasks' : 'No completed tasks'}
+            </p>
           </div>
         ) : (
-          <>
-            <div className="mb-10">
-              <h2 className="text-lg font-semibold text-slate-900 mb-4">
-                Categories ({list.tasks.length} of {totalTasks})
-              </h2>
-              <GroupList
-                tasks={list.tasks || []}
-                onToggleSubTask={handleToggleSubTask}
-                onDeleteSubTask={handleDeleteSubTask}
-                onUpdateSubTask={handleUpdateSubTask}
-                onRefresh={refreshList}
-                updatingItemId={updatingItemId}
-              />
-            </div>
-
-          </>
+          <GroupList
+            tasks={filteredTasks}
+            onToggleSubTask={handleToggleSubTask}
+            onDeleteSubTask={handleDeleteSubTask}
+            onUpdateSubTask={handleUpdateSubTask}
+            onRefresh={refreshList}
+            updatingItemId={updatingItemId}
+          />
         )}
+
+        {/* Infinite scroll sentinel - MUST be inside scrollable container */}
+        <div ref={sentinelRef} className="h-1" />
         </div>
       </div>
 
-      {/* Footer - Sticky at bottom */}
-      <div className="flex-shrink-0 bg-white border-t border-slate-200 px-6 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="text-sm text-slate-600">
-            Showing {currentPage * pageSize + 1}–{Math.min((currentPage + 1) * pageSize, totalTasks)} of{' '}
-            <span className="font-semibold text-slate-900">{totalTasks}</span> categories
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-              disabled={currentPage === 0}
-              className="px-4 py-2 bg-slate-200 text-slate-700 rounded font-medium hover:bg-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              ◄ Previous
-            </button>
-
-            <div className="text-sm font-semibold text-slate-700">
-              Page {currentPage + 1} of {Math.ceil(totalTasks / pageSize)}
+      {/* Sticky footer with loading status and scroll-to-top */}
+      {(list.tasks?.length || 0) > 0 && (
+        <div className="sticky bottom-0 bg-white border-t border-slate-200 px-6 py-4">
+          <div className="max-w-4xl mx-auto flex items-center justify-between">
+            <div className="text-sm text-slate-600">
+              {isLoadingMore ? (
+                <span className="flex items-center gap-3">
+                  <svg className="w-4 h-4 animate-spin text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Loading more tasks...
+                </span>
+              ) : (
+                <span>Loaded {allTasks.length}/{totalCountRef.current} tasks</span>
+              )}
             </div>
-
             <button
-              onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={!hasMore}
-              className="px-4 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              onClick={() => scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors"
             >
-              Next ►
+              ↑ Scroll to top
             </button>
           </div>
         </div>
-      </div>
+      )}
 
       <Toast
         message={toastMessage}
