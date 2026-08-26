@@ -50,7 +50,7 @@ export function SubTaskItem({
           type="text"
           value={editText}
           onChange={(e) => setEditText(e.target.value)}
-          placeholder="Item name"
+          placeholder="Name"
           className="flex-1 px-3 py-2 border border-slate-200 rounded text-sm"
           autoFocus
         />

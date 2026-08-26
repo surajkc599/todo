@@ -84,7 +84,7 @@ export function GroupTabs({
           <div>
             {openSubTasks.length === 0 ? (
               <div className="px-4 py-8 text-center text-slate-500 text-sm">
-                No open items. Start by adding an item.
+                No open items. Start by adding a Subtask.
               </div>
             ) : (
               <div>
@@ -112,7 +112,7 @@ export function GroupTabs({
                     : 'text-blue-600 hover:bg-slate-50'
                 }`}
               >
-                + Add item
+                + Add Subtask
               </button>
               {!navigator.onLine && (
                 <OfflineTooltip />

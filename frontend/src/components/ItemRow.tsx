@@ -43,7 +43,7 @@ export function ItemRow({ item, onToggle, onDelete, onUpdate, isUpdating = false
           value={editText}
           onChange={(e) => setEditText(e.target.value)}
           className="flex-1 px-3 py-2 border border-slate-300 rounded text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Item name"
+          placeholder="Name"
           disabled={isUpdating}
         />
         <input

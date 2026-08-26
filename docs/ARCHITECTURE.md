@@ -1,6 +1,8 @@
-# Architecture: v1 Implementation Guide
+# Architecture: Implementation Guide
 
-> **For the reasoning behind each tech choice (tradeoffs, alternatives, rationale), see [ARCHITECTURE_DECISIONS.md](ARCHITECTURE_DECISIONS.md).**
+This document is a **how-to** guide for building and deploying the app.
+
+> **Want to know WHY we chose each technology?** See [ARCHITECTURE_DECISIONS.md](ARCHITECTURE_DECISIONS.md) — it explains the reasoning behind each choice.
 
 ## Tech Stack
 
@@ -29,27 +31,51 @@
 
 ## Database Schema
 
-### lists table
-```sql
-CREATE TABLE lists (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMP DEFAULT NOW()
-);
+### Data Model
+```
+List
+  ├─ Task (category/group)
+  │  ├─ name, price (budget)
+  │  ├─ description (markdown)
+  │  └─ SubTasks (items)
+  │     ├─ text, price, done
+  │     └─ timestamps
+  └─ timestamps
 ```
 
-### items table
-```sql
-CREATE TABLE items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  list_id UUID NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
-  text VARCHAR(255) NOT NULL,
-  done BOOLEAN DEFAULT FALSE,
-  price DECIMAL(10, 2),
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
+### Prisma Schema
+```prisma
+model List {
+  id    String  @id @default(cuid())
+  tasks Task[]
+}
 
-CREATE INDEX idx_items_list_id ON items(list_id);
+model Task {
+  id          String    @id @default(cuid())
+  listId      String
+  text        String
+  description String?
+  price       Decimal?  @default(0)
+  list        List      @relation(fields: [listId], references: [id], onDelete: Cascade)
+  subtasks    SubTask[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@index([listId])
+}
+
+model SubTask {
+  id        String   @id @default(cuid())
+  taskId    String
+  text      String
+  price     Decimal? @default(0)
+  done      Boolean  @default(false)
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([taskId])
+}
 ```
 
 ---
@@ -66,46 +92,71 @@ CREATE INDEX idx_items_list_id ON items(list_id);
 #### Create a new list
 ```
 POST /api/lists
-Response: { id: string }
+Response: { id: string, tasks: [] }
 ```
 
-#### Get a list with all items
+#### Get a list (with pagination)
 ```
-GET /api/lists/:listId
+GET /api/lists/:listId?limit=5&offset=0
 Response: {
-  id: string,
-  createdAt: timestamp,
-  items: [
-    { id, text, done, price, createdAt },
-    ...
-  ]
+  list: {
+    id: string,
+    tasks: [
+      {
+        id, text, description, price, createdAt,
+        subtasks: [{ id, text, price, done, createdAt }, ...]
+      },
+      ...
+    ]
+  },
+  pagination: { limit, offset, total, hasMore }
 }
 ```
 
-#### Add item to list
+#### Create task
 ```
-POST /api/lists/:listId/items
-Body: { text: string, price?: number }
-Response: { id, text, done, price, createdAt }
-```
-
-#### Update item
-```
-PATCH /api/lists/:listId/items/:itemId
-Body: { text?: string, done?: boolean, price?: number }
-Response: { id, text, done, price, createdAt }
+POST /api/lists/:listId/tasks
+Body: { text: string, price?: number, description?: string }
+Response: { id, text, price, description, subtasks: [], createdAt }
 ```
 
-#### Delete item
+#### Update task
 ```
-DELETE /api/lists/:listId/items/:itemId
+PATCH /api/lists/:listId/tasks/:taskId
+Body: { text?: string, price?: number, description?: string }
+Response: { id, text, price, description, subtasks, createdAt }
+```
+
+#### Delete task (cascade deletes subtasks)
+```
+DELETE /api/lists/:listId/tasks/:taskId
+Response: 204 No Content
+```
+
+#### Create subtask
+```
+POST /api/lists/:listId/subtasks
+Body: { taskId: string, text: string, price?: number }
+Response: { id, taskId, text, price, done: false, createdAt }
+```
+
+#### Update subtask
+```
+PATCH /api/lists/:listId/subtasks/:subTaskId
+Body: { text?: string, price?: number, done?: boolean }
+Response: { id, taskId, text, price, done, createdAt }
+```
+
+#### Delete subtask
+```
+DELETE /api/lists/:listId/subtasks/:subTaskId
 Response: 204 No Content
 ```
 
 ### Error Handling
-- **404** — List or item not found
+- **404** — List or resource not found
 - **400** — Invalid request (missing fields, bad data)
-- **500** — Server error (with error message)
+- **500** — Server error
 
 ---
 
@@ -114,29 +165,48 @@ Response: 204 No Content
 ### Component Structure
 ```
 App
-├── ListPage (main component)
-│   ├── ItemInput (add new item)
-│   ├── ItemList (render items)
-│   │   └── ItemRow (single item)
-│   └── TotalCost (display sum)
-└── [error/loading states]
+├── ListPage (main)
+│   ├── Header (title, share button)
+│   ├── ViewMode toggle (Active/Completed)
+│   ├── GroupList (accordion)
+│   │   └── GroupAccordion
+│   │       ├─ Task header (delete, edit buttons)
+│   │       └─ GroupTabs (Open/Completed)
+│   │           └─ SubTaskItem
+│   │               ├─ Checkbox (done)
+│   │               ├─ Text (editable price)
+│   │               └─ Delete button
+│   ├── SyncIndicator (offline status)
+│   └── Toast (notifications)
+└── AddCategoryModal
 ```
 
 ### State Management
 ```javascript
-const [listId, setListId] = useState(null); // from URL params
-const [items, setItems] = useState([]);
-const [loading, setLoading] = useState(false);
-const [error, setError] = useState(null);
+const [list, setList] = useState(null);           // List + Tasks
+const [allTasks, setAllTasks] = useState([]);    // Display tasks
+const [viewMode, setViewMode] = useState('active'); // Active/Completed
+const [isOnline, setIsOnline] = useState(true);  // Offline status
+const [pendingCount, setPendingCount] = useState(0); // Queued ops
 ```
 
+### Offline Support
+- **Dexie (IndexedDB)** stores pending operations (edit/delete)
+- **SyncEngine** processes queued ops when online
+- **getMergedTasks()** combines server data with pending changes
+- **Only 3 operations supported offline:**
+  - Delete Task
+  - Delete SubTask
+  - Edit SubTask (price, done status)
+
 ### Data Flow
-1. App loads, extract `listId` from URL
-2. Fetch list items from `GET /api/lists/:listId`
-3. Render items locally
-4. User adds/edits/deletes item → immediately update local state
-5. Send POST/PATCH/DELETE to backend (fire-and-forget for v1)
-6. If request fails, show error toast, optionally revert state
+1. Load list: `GET /api/lists/:id?limit=5&offset=0`
+2. Merge server data with pending offline operations
+3. Render hierarchical UI (tasks with accordion, tabs for subtasks)
+4. User action → Update local state (optimistic)
+5. Send API request asynchronously
+6. If offline: Queue operation in Dexie
+7. If online: Auto-sync queued operations
 
 ---
 

@@ -18,13 +18,13 @@ export function AddSubTaskForm({ taskId, onSubmit, onCancel, onError }: AddSubTa
 
   const validateInput = (): string | null => {
     if (!text.trim()) {
-      return 'Item name is required';
+      return 'Name is required';
     }
     if (!/^[a-zA-Z0-9\s]+$/.test(text)) {
       return 'Only letters, numbers, and spaces allowed';
     }
     if (text.length > 500) {
-      return 'Item name must not exceed 500 characters';
+      return 'Name must not exceed 500 characters';
     }
     if (price < 0) {
       return 'Price cannot be negative';
@@ -66,14 +66,14 @@ export function AddSubTaskForm({ taskId, onSubmit, onCancel, onError }: AddSubTa
 
   return (
     <div className="space-y-3">
-      <label className="text-xs font-semibold text-slate-600 block">Add item</label>
+      <label className="text-xs font-semibold text-slate-600 block">Add Subtask</label>
       <div className="space-y-2">
         <div className="flex gap-2">
           <input
             type="text"
             value={text}
             onChange={(e) => handleTextChange(e.target.value)}
-            placeholder="Item name"
+            placeholder="Name"
             className={`flex-1 px-3 py-2 border rounded text-sm ${
               inputError ? 'border-red-400 bg-red-50' : 'border-slate-300'
             }`}
