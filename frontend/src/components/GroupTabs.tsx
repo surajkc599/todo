@@ -3,6 +3,15 @@ import { Task, SubTask } from '../types';
 import { SubTaskItem } from './SubTaskItem';
 import { AddSubTaskForm } from './AddSubTaskForm';
 
+function OfflineTooltip() {
+  return (
+    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 bg-amber-600 text-white text-xs rounded whitespace-nowrap z-10 pointer-events-none">
+      Not supported while offline
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-amber-600"></div>
+    </div>
+  );
+}
+
 interface GroupTabsProps {
   task: Task;
   openSubTasks: SubTask[];
@@ -93,12 +102,22 @@ export function GroupTabs({
             )}
 
             {/* Add Item Button */}
-            <button
-              onClick={() => setShowAddForm(!showAddForm)}
-              className="w-full px-4 py-3 text-blue-600 hover:bg-slate-50 font-medium text-sm border-t border-slate-200 transition-colors"
-            >
-              + Add item
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowAddForm(!showAddForm)}
+                disabled={!navigator.onLine}
+                className={`w-full px-4 py-3 font-medium text-sm border-t border-slate-200 transition-colors ${
+                  !navigator.onLine
+                    ? 'text-slate-400 cursor-not-allowed bg-slate-50'
+                    : 'text-blue-600 hover:bg-slate-50'
+                }`}
+              >
+                + Add item
+              </button>
+              {!navigator.onLine && (
+                <OfflineTooltip />
+              )}
+            </div>
 
             {/* Add Item Form */}
             {showAddForm && (

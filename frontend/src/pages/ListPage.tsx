@@ -7,6 +7,7 @@ import { AddCategoryModal } from '../components/AddCategoryModal';
 import { GroupList } from '../components/GroupList';
 import { Toast } from '../components/Toast';
 import { OnlineStatus } from '../components/OnlineStatus';
+import { getMergedTasks } from '../utils/offlineDisplay';
 
 export function ListPage() {
   const { id } = useParams<{ id: string }>();
@@ -83,7 +84,8 @@ export function ListPage() {
         }
 
         setList(data.list);
-        setAllTasks(allLoadedTasks);
+        const mergedTasks = await getMergedTasks(allLoadedTasks);
+        setAllTasks(mergedTasks);
         loadedOffsetRef.current = offset;
         totalCountRef.current = total;
       } catch (err) {
@@ -161,7 +163,8 @@ export function ListPage() {
       }
 
       setList(data.list);
-      setAllTasks(allLoadedTasks);
+      const mergedTasks = await getMergedTasks(allLoadedTasks);
+      setAllTasks(mergedTasks);
       loadedOffsetRef.current = offset;
       totalCountRef.current = total;
     } catch (err) {
@@ -194,6 +197,16 @@ export function ListPage() {
 
     try {
       await api.updateSubTask(id, subTaskId, { done });
+
+      // Update allTasks directly for immediate UI feedback
+      setAllTasks(prev => prev.map(task => ({
+        ...task,
+        subtasks: task.subtasks?.map(st =>
+          st.id === subTaskId ? { ...st, done } : st
+        ) || []
+      })));
+
+      // Also update list for consistency
       const updatedList = updateSubTaskInList(list, subTaskId, { done });
       setList(updatedList);
     } catch (err) {
@@ -211,6 +224,16 @@ export function ListPage() {
       await api.deleteSubTask(id, subTaskId);
       const updatedList = deleteSubTaskFromList(list, subTaskId);
       setList(updatedList);
+
+      // Update allTasks to reflect deletion
+      setAllTasks(prev => prev.map(task => ({
+        ...task,
+        subtasks: task.subtasks?.filter(st => st.id !== subTaskId) || []
+      })));
+
+      setToastMessage('Item deleted');
+      setToastType('success');
+      setShowToast(true);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to delete subtask';
       setToastMessage(message);
@@ -225,8 +248,19 @@ export function ListPage() {
     try {
       setUpdatingItemId(subTaskId);
       await api.updateSubTask(id, subTaskId, { text, price });
+
+      // Update allTasks directly for immediate UI feedback
+      setAllTasks(prev => prev.map(task => ({
+        ...task,
+        subtasks: task.subtasks?.map(st =>
+          st.id === subTaskId ? { ...st, text, price } : st
+        ) || []
+      })));
+
+      // Also update list for consistency
       const updatedList = updateSubTaskInList(list, subTaskId, { text, price });
       setList(updatedList);
+
       setToastMessage('Item updated');
       setToastType('success');
       setShowToast(true);
@@ -240,14 +274,41 @@ export function ListPage() {
     }
   };
 
+  const handleDeleteTask = async (taskId: string) => {
+    if (!id || !list) return;
+
+    try {
+      await api.deleteTask(id, taskId);
+
+      if (navigator.onLine) {
+        setAllTasks(prev => prev.filter(t => t.id !== taskId));
+      } else {
+        // Offline: re-merge to apply REMOVE_TASK operation
+        const mergedTasks = await getMergedTasks(list.tasks || []);
+        setAllTasks(mergedTasks);
+      }
+
+      setToastMessage('Category deleted');
+      setToastType('success');
+      setShowToast(true);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to delete category';
+      setToastMessage(message);
+      setToastType('error');
+      setShowToast(true);
+    }
+  };
+
   const handleAddTask = async () => {
     if (!list || !id) return;
     try {
       const data = await api.getList(id, pageSize, 0);
       setList(data.list);
-      setAllTasks(data.list.tasks);
+      const mergedTasks = await getMergedTasks(data.list.tasks);
+      setAllTasks(mergedTasks);
       loadedOffsetRef.current = pageSize;
       totalCountRef.current = data.pagination.total;
+
       setToastMessage('Task created');
       setToastType('success');
       setShowToast(true);
@@ -473,16 +534,25 @@ export function ListPage() {
             </button>
           </div>
         ) : filteredTasks.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-slate-500 text-lg mb-4">
-              {viewMode === 'active' ? 'No active tasks' : 'No completed tasks'}
+          <div className="text-center py-20 px-6">
+            <p className="text-slate-500 text-lg mb-6">
+              {viewMode === 'active' ? '✓ All tasks completed!' : 'No completed tasks yet'}
             </p>
+            {viewMode === 'active' && completedTasks > 0 && (
+              <button
+                onClick={() => setViewMode('completed')}
+                className="bg-green-600 text-white px-6 py-3 rounded font-medium hover:bg-green-700"
+              >
+                View {completedTasks} Completed Task{completedTasks !== 1 ? 's' : ''}
+              </button>
+            )}
           </div>
         ) : (
           <GroupList
             tasks={filteredTasks}
             onToggleSubTask={handleToggleSubTask}
             onDeleteSubTask={handleDeleteSubTask}
+            onDeleteTask={handleDeleteTask}
             onUpdateSubTask={handleUpdateSubTask}
             onRefresh={refreshList}
             updatingItemId={updatingItemId}

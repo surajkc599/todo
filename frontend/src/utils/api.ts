@@ -1,6 +1,6 @@
 import { List, Task, SubTask, CreateTaskRequest, CreateSubTaskRequest, UpdateSubTaskRequest } from '../types';
+import { queue } from './offlineQueue';
 
-// @ts-expect-error - Vite env variable not typed
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 interface ApiResponse<T> {
@@ -92,8 +92,14 @@ export const api = {
     }),
   updateTask: (listId: string, taskId: string, data: Partial<CreateTaskRequest>): Promise<Task> =>
     apiFetch(`/lists/${listId}/tasks/${taskId}`, { method: 'PATCH', body: data }),
-  deleteTask: (listId: string, taskId: string): Promise<null> =>
-    apiFetch(`/lists/${listId}/tasks/${taskId}`, { method: 'DELETE' }),
+  deleteTask: async (listId: string, taskId: string): Promise<null> => {
+    if (navigator.onLine) {
+      return await apiFetch(`/lists/${listId}/tasks/${taskId}`, { method: 'DELETE' });
+    } else {
+      await queue.addOp({ type: 'REMOVE_TASK', listId, taskId, data: {} });
+      return null;
+    }
+  },
 
   // SubTasks
   createSubTask: (listId: string, data: CreateSubTaskRequest): Promise<SubTask> =>
@@ -101,10 +107,22 @@ export const api = {
       method: 'POST',
       body: data,
     }),
-  updateSubTask: (listId: string, subTaskId: string, data: UpdateSubTaskRequest): Promise<SubTask> =>
-    apiFetch(`/lists/${listId}/subtasks/${subTaskId}`, { method: 'PATCH', body: data }),
-  deleteSubTask: (listId: string, subTaskId: string): Promise<null> =>
-    apiFetch(`/lists/${listId}/subtasks/${subTaskId}`, { method: 'DELETE' }),
+  updateSubTask: async (listId: string, subTaskId: string, data: UpdateSubTaskRequest): Promise<SubTask> => {
+    if (navigator.onLine) {
+      return await apiFetch(`/lists/${listId}/subtasks/${subTaskId}`, { method: 'PATCH', body: data });
+    } else {
+      await queue.addOp({ type: 'PATCH_SUBTASK', listId, subTaskId, data });
+      return { id: subTaskId } as SubTask;
+    }
+  },
+  deleteSubTask: async (listId: string, subTaskId: string): Promise<null> => {
+    if (navigator.onLine) {
+      return await apiFetch(`/lists/${listId}/subtasks/${subTaskId}`, { method: 'DELETE' });
+    } else {
+      await queue.addOp({ type: 'REMOVE_SUBTASK', listId, subTaskId, data: {} });
+      return null;
+    }
+  },
 
   // Keep old API methods for backward compatibility (will remove after component refactor)
   createItem: (data: any) => api.createTask(data.listId, { text: data.text, price: data.price }),

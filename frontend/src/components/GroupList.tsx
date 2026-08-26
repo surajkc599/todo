@@ -5,6 +5,7 @@ interface GroupListProps {
   tasks: Task[];
   onToggleSubTask: (subTaskId: string, done: boolean) => void;
   onDeleteSubTask: (subTaskId: string) => void;
+  onDeleteTask: (taskId: string) => void;
   onUpdateSubTask: (subTaskId: string, text: string, price: number) => void;
   onRefresh: () => void;
   updatingItemId: string | null;
@@ -14,6 +15,7 @@ export function GroupList({
   tasks,
   onToggleSubTask,
   onDeleteSubTask,
+  onDeleteTask,
   onUpdateSubTask,
   onRefresh,
   updatingItemId,
@@ -30,6 +32,7 @@ export function GroupList({
           task={task}
           onToggleSubTask={onToggleSubTask}
           onDeleteSubTask={onDeleteSubTask}
+          onDeleteTask={onDeleteTask}
           onUpdateSubTask={onUpdateSubTask}
           onRefresh={onRefresh}
           updatingItemId={updatingItemId}

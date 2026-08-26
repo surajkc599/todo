@@ -10,6 +10,7 @@ interface GroupAccordionProps {
   task: Task;
   onToggleSubTask: (subTaskId: string, done: boolean) => void;
   onDeleteSubTask: (subTaskId: string) => void;
+  onDeleteTask: (taskId: string) => void;
   onUpdateSubTask: (subTaskId: string, text: string, price: number) => void;
   onRefresh: () => void;
   updatingItemId: string | null;
@@ -19,6 +20,7 @@ export function GroupAccordion({
   task,
   onToggleSubTask,
   onDeleteSubTask,
+  onDeleteTask,
   onUpdateSubTask,
   onRefresh,
   updatingItemId,
@@ -46,7 +48,7 @@ export function GroupAccordion({
 
   const handleConfirmDelete = () => {
     setShowDeleteDialog(false);
-    onDeleteSubTask(task.id);
+    onDeleteTask(task.id);
   };
 
   const handleSaveBudget = () => {
@@ -147,27 +149,40 @@ export function GroupAccordion({
             </div>
             )}
 
-          {/* Edit Budget Button - Always show for adding budget when both are 0 */}
+          {/* Edit Budget Button */}
           {!isEditingBudget && budget === 0 && spent === 0 && (
             <button
               onClick={(e) => {
+                if (!navigator.onLine) return;
                 e.stopPropagation();
                 setIsEditingBudget(true);
               }}
-              className="px-3 py-1 text-slate-500 hover:text-slate-900 hover:bg-slate-200 rounded transition-colors opacity-0 group-hover:opacity-100"
-              title="Add budget"
+              disabled={!navigator.onLine}
+              className={`px-3 py-1 rounded transition-colors opacity-0 group-hover:opacity-100 ${
+                navigator.onLine
+                  ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-200 cursor-pointer'
+                  : 'text-slate-300 cursor-not-allowed'
+              }`}
+              title={!navigator.onLine ? 'Not supported offline' : 'Add budget'}
             >
               💰
             </button>
           )}
 
+          {/* Description Button */}
           <button
             onClick={(e) => {
+              if (!navigator.onLine) return;
               e.stopPropagation();
               setShowDescriptionModal(true);
             }}
-            className="px-3 py-1 text-slate-500 hover:text-slate-900 hover:bg-slate-200 rounded transition-colors opacity-0 group-hover:opacity-100"
-            title="Edit description"
+            disabled={!navigator.onLine}
+            className={`px-3 py-1 rounded transition-colors opacity-0 group-hover:opacity-100 ${
+              navigator.onLine
+                ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-200 cursor-pointer'
+                : 'text-slate-300 cursor-not-allowed'
+            }`}
+            title={!navigator.onLine ? 'Not supported offline' : 'Edit description'}
           >
             📝
           </button>

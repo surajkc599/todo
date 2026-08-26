@@ -92,7 +92,12 @@ export function AddSubTaskForm({ taskId, onSubmit, onCancel, onError }: AddSubTa
         </div>
         {inputError && <p className="text-xs text-red-600">{inputError}</p>}
       </div>
-      <div className="flex gap-2 justify-end">
+      <div className="flex gap-2 justify-end items-center">
+        {!navigator.onLine && (
+          <p className="text-xs text-amber-600 font-medium">
+            ⚠️ Adding items not supported offline
+          </p>
+        )}
         <button
           onClick={onCancel}
           className="px-4 py-2 bg-slate-200 text-slate-700 rounded text-sm font-medium hover:bg-slate-300"
@@ -101,8 +106,8 @@ export function AddSubTaskForm({ taskId, onSubmit, onCancel, onError }: AddSubTa
         </button>
         <button
           onClick={handleSubmit}
-          disabled={isLoading || !text.trim()}
-          className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 disabled:bg-slate-400"
+          disabled={isLoading || !text.trim() || !navigator.onLine}
+          className="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 disabled:bg-slate-400 disabled:cursor-not-allowed"
         >
           {isLoading ? 'Adding...' : 'Add'}
         </button>
