@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Task } from '../types';
+import { Task } from '../../../shared/types';
 import { GroupTabs } from './GroupTabs';
-import { ConfirmDialog } from './ConfirmDialog';
-import { DescriptionModal } from './DescriptionModal';
-import { DescriptionDisplay } from './DescriptionDisplay';
-import { api } from '../utils/api';
+import { ConfirmDialog } from '../../../shared/ui/ConfirmDialog';
+import { DescriptionModal } from '../../../shared/ui/DescriptionModal';
+import { DescriptionDisplay } from '../../../shared/ui/DescriptionDisplay';
+import { api } from '../../../shared/utils/api';
 
 interface GroupAccordionProps {
   task: Task;

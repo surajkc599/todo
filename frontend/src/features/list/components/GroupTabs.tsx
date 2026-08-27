@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Task, SubTask } from '../types';
+import { Task, SubTask } from '../../../shared/types';
 import { SubTaskItem } from './SubTaskItem';
 import { AddSubTaskForm } from './AddSubTaskForm';
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { SubTask } from '../types';
+import { SubTask } from '../../../shared/types';
 
 interface SubTaskItemProps {
   item: SubTask;

@@ -11,7 +11,7 @@
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
-import { ApiResponse, List, CreateListRequest } from '../types/index.js';
+import { ApiResponse, List, CreateListRequest, PaginatedListResponse } from '../types/index.js';
 import * as listService from '../services/listService.js';
 
 const router = Router();
@@ -130,7 +130,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
       });
     }
 
-    const response: ApiResponse<any> = {
+    const response: ApiResponse<PaginatedListResponse> = {
       data: {
         list: result.list,
         pagination: {

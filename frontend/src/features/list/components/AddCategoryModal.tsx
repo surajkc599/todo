@@ -1,4 +1,4 @@
-import { Task } from '../types';
+import { Task } from '../../../shared/types';
 import { AddGroupForm } from './AddGroupForm';
 
 interface AddCategoryModalProps {

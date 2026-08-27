@@ -1,4 +1,4 @@
-import { Task } from '../types';
+import { Task } from '../../../shared/types';
 import { GroupAccordion } from './GroupAccordion';
 
 interface GroupListProps {

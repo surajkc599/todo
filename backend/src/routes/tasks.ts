@@ -6,6 +6,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { ApiResponse, Task, CreateTaskRequest } from '../types/index.js';
 import * as taskService from '../services/taskService.js';
+import { validateCreateItemRequest, validateUpdateItemRequest } from '../utils/validation.js';
 
 const router = Router({ mergeParams: true });
 
@@ -14,6 +15,11 @@ const router = Router({ mergeParams: true });
  */
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const validation = validateCreateItemRequest(req.body);
+    if (!validation.isValid) {
+      return res.status(400).json({ error: validation.errors.join('; ') });
+    }
+
     const { listId } = req.params;
     const data: CreateTaskRequest = req.body;
 
@@ -31,6 +37,11 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
  */
 router.patch('/:taskId', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const validation = validateUpdateItemRequest(req.body);
+    if (!validation.isValid) {
+      return res.status(400).json({ error: validation.errors.join('; ') });
+    }
+
     const { listId, taskId } = req.params;
     const data: Partial<CreateTaskRequest> = req.body;
 

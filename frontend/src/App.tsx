@@ -1,10 +1,10 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import { LandingPage } from './pages/LandingPage';
-import { ListPage } from './pages/ListPage';
-import { SyncIndicator } from './components/SyncIndicator';
-import { syncEngine } from './utils/syncEngine';
-import './styles/globals.css';
+import { Landing } from './features/landing';
+import { List } from './features/list';
+import { SyncIndicator } from './shared/ui/SyncIndicator';
+import { syncEngine } from './shared/services/offline/syncEngine';
+import './shared/styles/globals.css';
 
 function AppContent() {
   useEffect(() => {
@@ -17,8 +17,8 @@ function AppContent() {
   return (
     <>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/list/:id" element={<ListPage />} />
+        <Route path="/" element={<Landing />} />
+        <Route path="/list/:id" element={<List />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <SyncIndicator />

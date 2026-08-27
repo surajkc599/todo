@@ -6,6 +6,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { ApiResponse, SubTask, CreateSubTaskRequest } from '../types/index.js';
 import * as subtaskService from '../services/subtaskService.js';
+import { validateCreateItemRequest, validateUpdateItemRequest } from '../utils/validation.js';
 
 const router = Router({ mergeParams: true });
 
@@ -14,6 +15,11 @@ const router = Router({ mergeParams: true });
  */
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const validation = validateCreateItemRequest(req.body);
+    if (!validation.isValid) {
+      return res.status(400).json({ error: validation.errors.join('; ') });
+    }
+
     const { listId } = req.params;
     const data: CreateSubTaskRequest = req.body;
 
@@ -31,6 +37,11 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
  */
 router.patch('/:subTaskId', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const validation = validateUpdateItemRequest(req.body);
+    if (!validation.isValid) {
+      return res.status(400).json({ error: validation.errors.join('; ') });
+    }
+
     const { listId, subTaskId } = req.params;
     const data: Partial<CreateSubTaskRequest> & { done?: boolean } = req.body;
 

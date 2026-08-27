@@ -1,5 +1,5 @@
 import { queue, PendingOp } from './offlineQueue';
-import { api } from './api';
+import { api } from '../../utils/api';
 
 export class SyncEngine {
   private isSyncing = false;

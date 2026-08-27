@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { api } from '../utils/api';
-import { Task } from '../types';
+import { api } from '../../../shared/utils/api';
+import { Task } from '../../../shared/types';
+import { validateTaskInput } from '../../../shared/utils/validators';
 
 interface AddGroupFormProps {
   onSuccess: (newTask: Task) => void;
@@ -19,19 +20,8 @@ export function AddGroupForm({ onSuccess, onError, onCancel, isLoading: external
   const [inputError, setInputError] = useState<string | null>(null);
 
   const validateInput = (): string | null => {
-    if (!text.trim()) {
-      return 'Category name is required';
-    }
-    if (!/^[a-zA-Z0-9\s]+$/.test(text)) {
-      return 'Only letters, numbers, and spaces allowed';
-    }
-    if (text.length > 500) {
-      return 'Category name must not exceed 500 characters';
-    }
-    if (price < 0) {
-      return 'Budget cannot be negative';
-    }
-    return null;
+    const validation = validateTaskInput(text, price);
+    return validation.isValid ? null : validation.message || null;
   };
 
   const handleTextChange = (value: string) => {

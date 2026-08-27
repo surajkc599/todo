@@ -1,5 +1,5 @@
 import { List, Task, SubTask, CreateTaskRequest, CreateSubTaskRequest, UpdateSubTaskRequest } from '../types';
-import { queue } from './offlineQueue';
+import { queue } from '../services/offline/offlineQueue';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -123,9 +123,4 @@ export const api = {
       return null;
     }
   },
-
-  // Keep old API methods for backward compatibility (will remove after component refactor)
-  createItem: (data: any) => api.createTask(data.listId, { text: data.text, price: data.price }),
-  updateItem: (listId: string, itemId: string, data: any) => api.updateTask(listId, itemId, data),
-  deleteItem: (listId: string, itemId: string) => api.deleteTask(listId, itemId),
 };

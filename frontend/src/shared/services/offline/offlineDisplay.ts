@@ -1,5 +1,5 @@
 import { queue } from './offlineQueue';
-import { Task } from '../types';
+import { Task } from '../../types';
 
 export async function getMergedTasks(serverTasks: Task[]): Promise<Task[]> {
   const pending = await queue.getPending();

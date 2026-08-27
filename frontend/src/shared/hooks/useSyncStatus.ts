@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { queue } from '../utils/offlineQueue';
+import { queue } from '../services/offline/offlineQueue';
 
 export interface SyncStatus {
   isOnline: boolean;

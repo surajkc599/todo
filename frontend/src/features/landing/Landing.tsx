@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { api } from '../utils/api';
-import { Toast } from '../components/Toast';
+import { api } from '../../shared/utils/api';
+import { Toast } from '../../shared/ui/Toast';
 
-export function LandingPage() {
+export function Landing() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState('');

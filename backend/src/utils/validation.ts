@@ -2,8 +2,10 @@
  * Input validation utilities for Todo App
  */
 
+const TEXT_PATTERN = /^[a-zA-Z0-9\s\-'&,.!?()]+$/;
+
 /**
- * Validates a create item request (group or sub-task)
+ * Validates a create task request
  */
 export function validateCreateItemRequest(data: unknown): {
   isValid: boolean;
@@ -19,13 +21,13 @@ export function validateCreateItemRequest(data: unknown): {
   const obj = data as Record<string, unknown>;
 
   if (!obj.text || typeof obj.text !== 'string') {
-    errors.push('Item text is required and must be a string');
+    errors.push('Text is required and must be a string');
   } else if (obj.text.trim().length === 0) {
-    errors.push('Item text cannot be empty');
-  } else if (!/^[a-zA-Z0-9\s]+$/.test(obj.text)) {
-    errors.push('Item text can only contain letters, numbers, and spaces');
+    errors.push('Text cannot be empty');
+  } else if (!TEXT_PATTERN.test(obj.text)) {
+    errors.push('Text contains invalid characters. Allowed: letters, numbers, spaces, and basic punctuation (-, \', &, ,, ., !, ?, (), )');
   } else if (obj.text.length > 500) {
-    errors.push('Item text must not exceed 500 characters');
+    errors.push('Text must not exceed 500 characters');
   }
 
   if (obj.price !== undefined && obj.price !== null) {
@@ -39,15 +41,6 @@ export function validateCreateItemRequest(data: unknown): {
     errors.push('Done flag must be a boolean');
   }
 
-  // Validate parentItemId if provided (optional, for sub-tasks)
-  if (obj.parentItemId !== undefined && obj.parentItemId !== null) {
-    if (typeof obj.parentItemId !== 'string') {
-      errors.push('Parent item ID must be a string');
-    } else if (!isValidUUID(obj.parentItemId)) {
-      errors.push('Parent item ID must be a valid UUID');
-    }
-  }
-
   return {
     isValid: errors.length === 0,
     errors,
@@ -55,7 +48,7 @@ export function validateCreateItemRequest(data: unknown): {
 }
 
 /**
- * Validates an update item request
+ * Validates an update task request
  */
 export function validateUpdateItemRequest(data: unknown): {
   isValid: boolean;
@@ -76,13 +69,13 @@ export function validateUpdateItemRequest(data: unknown): {
 
   if (obj.text !== undefined) {
     if (typeof obj.text !== 'string') {
-      errors.push('Item text must be a string');
+      errors.push('Text must be a string');
     } else if (obj.text.trim().length === 0) {
-      errors.push('Item text cannot be empty');
-    } else if (!/^[a-zA-Z0-9\s]+$/.test(obj.text)) {
-      errors.push('Item text can only contain letters, numbers, and spaces');
+      errors.push('Text cannot be empty');
+    } else if (!TEXT_PATTERN.test(obj.text)) {
+      errors.push('Text contains invalid characters. Allowed: letters, numbers, spaces, and basic punctuation (-, \', &, ,, ., !, ?, (), )');
     } else if (obj.text.length > 500) {
-      errors.push('Item text must not exceed 500 characters');
+      errors.push('Text must not exceed 500 characters');
     }
   }
 
@@ -104,15 +97,14 @@ export function validateUpdateItemRequest(data: unknown): {
 }
 
 /**
- * Sanitize item text: only allow alphanumeric characters and spaces
- * Removes all special characters, HTML, and potential injection vectors
+ * Sanitize text: remove only dangerous characters while allowing punctuation
  */
 export function sanitizeText(text: string): string {
   return text
     .trim()
-    // Keep only alphanumeric and spaces
-    .replace(/[^a-zA-Z0-9\s]/g, '')
-    // Limit consecutive spaces
+    // Remove HTML/script injection attempts
+    .replace(/[<>{}]/g, '')
+    // Remove multiple consecutive spaces
     .replace(/\s+/g, ' ');
 }
 

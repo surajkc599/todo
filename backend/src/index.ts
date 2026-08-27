@@ -95,15 +95,20 @@ const startServer = async () => {
 ║ 🔌 API Base URL: http://localhost:${PORT}/api
 ║
 ║ Available Endpoints:
-║   POST   /api/lists/:id          - Create a new list
-║   GET    /api/lists/:id          - Get list with items
+║   POST   /api/lists                - Create a new list
+║   GET    /api/lists/:listId        - Get list with tasks
+║   DELETE /api/lists/:listId        - Delete list
 ║
-║   POST   /api/lists/:id/items    - Create an item
-║   PATCH  /api/lists/:id/items/:itemId - Update an item
-║   DELETE /api/lists/:id/items/:itemId - Delete an item
+║   POST   /api/lists/:listId/tasks  - Create task
+║   PATCH  /api/lists/:listId/tasks/:taskId - Update task
+║   DELETE /api/lists/:listId/tasks/:taskId - Delete task
+║
+║   POST   /api/lists/:listId/subtasks - Create subtask
+║   PATCH  /api/lists/:listId/subtasks/:subTaskId - Update subtask
+║   DELETE /api/lists/:listId/subtasks/:subTaskId - Delete subtask
 ║
 ║ 📊 Health Check: GET /health
-║ ❗ NOTE: Database integration pending after \`npm install\`
+║ 📖 Swagger Docs: http://localhost:${PORT}/api-docs
 ╚═══════════════════════════════════════════════════════════╝
       `);
     });

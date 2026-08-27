@@ -61,16 +61,21 @@ export async function getListById(
       return null;
     }
 
-    // Get paginated tasks with their subtasks
-    const tasks = await prisma.task.findMany({
-      where: { listId },
-      include: {
-        subtasks: true,
-      },
-      orderBy: { createdAt: 'desc' },
-      take: validLimit,
-      skip: validOffset,
-    });
+    // Get paginated tasks and total count in parallel
+    const [tasks, totalCount] = await prisma.$transaction([
+      prisma.task.findMany({
+        where: { listId },
+        include: {
+          subtasks: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: validLimit,
+        skip: validOffset,
+      }),
+      prisma.task.count({
+        where: { listId },
+      }),
+    ]);
 
     // Convert Decimal prices to numbers
     const tasksWithConvertedPrices: Task[] = tasks.map((task) => ({
@@ -81,11 +86,6 @@ export async function getListById(
         price: subtask.price ? Number(subtask.price) : null,
       })),
     }));
-
-    // Get total count of tasks
-    const totalCount = await prisma.task.count({
-      where: { listId },
-    });
 
     return {
       list: { ...list, tasks: tasksWithConvertedPrices },

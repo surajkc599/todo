@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { api } from '../utils/api';
+import { api } from '../../../shared/utils/api';
+import { validateTaskInput } from '../../../shared/utils/validators';
 
 interface AddSubTaskFormProps {
   taskId: string;
@@ -17,19 +18,8 @@ export function AddSubTaskForm({ taskId, onSubmit, onCancel, onError }: AddSubTa
   const [inputError, setInputError] = useState<string | null>(null);
 
   const validateInput = (): string | null => {
-    if (!text.trim()) {
-      return 'Name is required';
-    }
-    if (!/^[a-zA-Z0-9\s]+$/.test(text)) {
-      return 'Only letters, numbers, and spaces allowed';
-    }
-    if (text.length > 500) {
-      return 'Name must not exceed 500 characters';
-    }
-    if (price < 0) {
-      return 'Price cannot be negative';
-    }
-    return null;
+    const validation = validateTaskInput(text, price);
+    return validation.isValid ? null : validation.message || null;
   };
 
   const handleTextChange = (value: string) => {
