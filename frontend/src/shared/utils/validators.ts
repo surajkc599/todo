@@ -16,14 +16,17 @@ export function validateTaskName(text: string): ValidationError {
   return { isValid: true };
 }
 
-export function validatePrice(price: number): ValidationError {
+export function validatePrice(price: number | ''): ValidationError {
+  if (price === '') {
+    return { isValid: true };
+  }
   if (price < 0) {
     return { isValid: false, message: 'Price cannot be negative' };
   }
   return { isValid: true };
 }
 
-export function validateTaskInput(text: string, price: number): ValidationError {
+export function validateTaskInput(text: string, price: number | ''): ValidationError {
   const nameValidation = validateTaskName(text);
   if (!nameValidation.isValid) {
     return nameValidation;

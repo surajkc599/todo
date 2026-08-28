@@ -15,7 +15,7 @@ interface AddGroupFormProps {
 export function AddGroupForm({ onSuccess, onError, onCancel, isLoading: externalLoading, showCancel = false }: AddGroupFormProps) {
   const { id: listId } = useParams<{ id: string }>();
   const [text, setText] = useState('');
-  const [price, setPrice] = useState(0);
+  const [price, setPrice] = useState<number | ''>(0);
   const [isLoading, setIsLoading] = useState(false);
   const [inputError, setInputError] = useState<string | null>(null);
 
@@ -42,7 +42,7 @@ export function AddGroupForm({ onSuccess, onError, onCancel, isLoading: external
       setIsLoading(true);
       const newTask = await api.createTask(listId, {
         text,
-        price: price || null,
+        price: price === '' ? null : price,
       });
       setText('');
       setPrice(0);
@@ -82,12 +82,18 @@ export function AddGroupForm({ onSuccess, onError, onCancel, isLoading: external
         <div>
           <label className="text-sm font-semibold text-slate-700 block mb-2">Budget (€)</label>
           <input
-            type="number"
+            type="text"
             value={price}
-            onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === '') {
+                setPrice('');
+              } else {
+                const num = parseFloat(val);
+                setPrice(isNaN(num) ? '' : Math.max(0, num));
+              }
+            }}
             placeholder="0.00"
-            step="0.01"
-            min="0"
             className="w-full px-4 py-3 border border-slate-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             disabled={isLoading || externalLoading}
           />

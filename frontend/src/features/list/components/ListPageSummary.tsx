@@ -13,10 +13,6 @@ export function ListPageSummary({
   completedItems,
   totalItems,
 }: ListPageSummaryProps) {
-  if (list.tasks.length === 0) {
-    return null;
-  }
-
   const totalBudget = (list.tasks || []).reduce((sum, task) => sum + (task.price || 0), 0);
   const progressPercent = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
 

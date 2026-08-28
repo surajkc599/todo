@@ -15,7 +15,7 @@ export function Toast({
   isVisible,
   onClose,
   type = 'success',
-  duration = 2000,
+  duration = 4000,
 }: ToastProps) {
   useEffect(() => {
     if (!isVisible) return;

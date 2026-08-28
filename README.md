@@ -2,6 +2,12 @@
 
 A lightweight, collaborative todo list app for families. Create a list, share the link, manage items together.
 
+## Live Demo
+
+**Production:**
+- Frontend: https://todo-six-zeta-34.vercel.app/
+- API Docs: https://todo-api-75yo.onrender.com/api-docs/
+
 ## Features Implemented
 
 ✨ **Create Lists** - Click "Create New List" to start
@@ -37,6 +43,7 @@ docker-compose up
 
 - Frontend: `http://localhost:5173`
 - Backend: `http://localhost:3001`
+- API Docs: `http://localhost:3001/api-docs` (Swagger UI)
 - Database: PostgreSQL on `localhost:5432`
 
 ### Manual Setup

@@ -13,7 +13,7 @@ interface AddSubTaskFormProps {
 export function AddSubTaskForm({ taskId, onSubmit, onCancel, onError }: AddSubTaskFormProps) {
   const { id: listId } = useParams<{ id: string }>();
   const [text, setText] = useState('');
-  const [price, setPrice] = useState(0);
+  const [price, setPrice] = useState<number | ''>(0);
   const [isLoading, setIsLoading] = useState(false);
   const [inputError, setInputError] = useState<string | null>(null);
 
@@ -40,7 +40,7 @@ export function AddSubTaskForm({ taskId, onSubmit, onCancel, onError }: AddSubTa
       setIsLoading(true);
       await api.createSubTask(listId, {
         text,
-        price: price || null,
+        price: price === '' ? null : price,
         taskId,
       });
       setText('');
@@ -71,12 +71,18 @@ export function AddSubTaskForm({ taskId, onSubmit, onCancel, onError }: AddSubTa
             autoFocus
           />
           <input
-            type="number"
+            type="text"
             value={price}
-            onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === '') {
+                setPrice('');
+              } else {
+                const num = parseFloat(val);
+                setPrice(isNaN(num) ? '' : Math.max(0, num));
+              }
+            }}
             placeholder="€ Price"
-            step="0.01"
-            min="0"
             className="w-24 px-3 py-2 border border-slate-300 rounded text-sm"
           />
         </div>
